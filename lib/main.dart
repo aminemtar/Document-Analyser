@@ -889,8 +889,9 @@ class DocumentTextExtractor {
       finally { pdf.dispose(); }
     } else if (ext == 'DOCX') {
       final archive = ZipDecoder().decodeBytes(bytes);
-      final entry = archive.files.where((f) => f.name == 'word/document.xml').firstOrNull;
-      if (entry == null) throw Exception('Could not find the text body inside this DOCX file.');
+      final entries = archive.files.where((f) => f.name == 'word/document.xml').toList();
+      if (entries.isEmpty) throw Exception('Could not find the text body inside this DOCX file.');
+      final entry = entries.first;
       final xml = XmlDocument.parse(utf8.decode(entry.content as List<int>, allowMalformed: true));
       text = xml.descendants.whereType<XmlElement>()
         .where((e) => e.name.local == 't').map((e) => e.innerText).join(' ');
@@ -905,9 +906,9 @@ class DocumentTextExtractor {
     } else {
       throw Exception('Legacy .doc files are not supported yet. Save this file as .docx or PDF and upload it again.');
     }
-    text = text.replaceAll(RegExp(r'[ \\t]+'), ' ').replaceAll(RegExp(r'\\n{3,}'), '\\n\\n').trim();
+    text = text.replaceAll(RegExp(r'[ \t]+'), ' ').replaceAll(RegExp(r'\n{3,}'), '\\n\\n').trim();
     if (text.isEmpty) throw Exception('No readable text was extracted from this file.');
-    if (text.length > 65000) text = '${text.substring(0, 65000)}\\n[Document truncated for analysis due to context limits.]';
+    if (text.length > 65000) text = '${text.substring(0, 65000)}\n[Document truncated for analysis due to context limits.]';
     return text;
   }
 }
