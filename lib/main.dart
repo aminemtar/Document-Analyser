@@ -1,4 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:archive/archive.dart';
+import 'package:http/http.dart' as http;
+import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
+import 'package:xml/xml.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,14 +56,18 @@ class DocItem {
   final String size;
   final String date;
   final String status;
-  const DocItem(this.name, this.type, this.size, this.date, this.status);
+  final String? path;
+  final String? analysisJson;
+  const DocItem(this.name, this.type, this.size, this.date, this.status,
+      {this.path, this.analysisJson});
+
+  DocItem copyWith({String? status, String? analysisJson}) => DocItem(
+      name, type, size, date, status ?? this.status,
+      path: path, analysisJson: analysisJson ?? this.analysisJson);
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'type': type,
-        'size': size,
-        'date': date,
-        'status': status
+        'name': name, 'type': type, 'size': size, 'date': date,
+        'status': status, 'path': path, 'analysisJson': analysisJson
       };
   factory DocItem.fromJson(Map<String, dynamic> json) => DocItem(
         json['name'] ?? 'Untitled document',
@@ -66,8 +75,11 @@ class DocItem {
         json['size'] ?? '—',
         json['date'] ?? 'Recently added',
         json['status'] ?? 'Ready',
+        path: json['path'],
+        analysisJson: json['analysisJson'],
       );
 }
+
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -78,14 +90,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int selected = 0;
   bool loading = true;
-  final List<DocItem> documents = [
-    const DocItem(
-        'Acquisition_Agreement.pdf', 'PDF', '2.4 MB', 'Today', 'Analyzed'),
-    const DocItem(
-        'Q3_Financial_Report.pdf', 'PDF', '1.8 MB', 'Yesterday', 'Analyzed'),
-    const DocItem(
-        'Employment_Contract.docx', 'DOCX', '840 KB', 'Oct 28', 'Ready'),
-  ];
+  final List<DocItem> documents = [];
 
   @override
   void initState() {
@@ -120,6 +125,7 @@ class _AppShellState extends State<AppShell> {
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'rtf'],
       withData: false,
+      withReadStream: false,
     );
     if (result == null || result.files.isEmpty || !mounted) return;
     final file = result.files.first;
@@ -128,7 +134,7 @@ class _AppShellState extends State<AppShell> {
         ? '${(file.size / 1024).toStringAsFixed(0)} KB'
         : '${(file.size / (1024 * 1024)).toStringAsFixed(1)} MB';
     setState(() {
-      documents.insert(0, DocItem(file.name, ext, size, 'Just now', 'Ready'));
+      documents.insert(0, DocItem(file.name, ext, size, 'Just now', 'Ready', path: file.path));
       selected = 1;
     });
     await _saveDocuments();
@@ -192,7 +198,10 @@ class _AppShellState extends State<AppShell> {
           docs: documents,
           onUpload: _pickDocument,
           onOpen: (doc) => setState(() => selected = 2)),
-      AnalysisPage(docs: documents),
+      AnalysisPage(docs: documents, onUpdate: (updated) async {
+        final index = documents.indexWhere((d) => d.name == updated.name && d.path == updated.path);
+        if (index >= 0) { documents[index] = updated; await _saveDocuments(); if (mounted) setState(() {}); }
+      }),
       const AssistantPage(),
       const InsightsPage(),
       ComparePage(docs: documents),
@@ -683,169 +692,261 @@ class _LibraryPageState extends State<LibraryPage> {
 
 class AnalysisPage extends StatefulWidget {
   final List<DocItem> docs;
-  const AnalysisPage({super.key, required this.docs});
+  final ValueChanged<DocItem> onUpdate;
+  const AnalysisPage({super.key, required this.docs, required this.onUpdate});
   @override
   State<AnalysisPage> createState() => _AnalysisPageState();
 }
 
 class _AnalysisPageState extends State<AnalysisPage> {
   int tab = 0;
+  int selectedIndex = 0;
+  bool busy = false;
+  String? error;
+  Map<String, dynamic>? result;
+
+  @override
+  void didUpdateWidget(covariant AnalysisPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (selectedIndex >= widget.docs.length) selectedIndex = 0;
+  }
+
+  Future<void> _analyze(DocItem doc) async {
+    if (doc.path == null || doc.path!.isEmpty) {
+      setState(() => error = 'This item has no local file attached. Please upload the original document again.');
+      return;
+    }
+    setState(() { busy = true; error = null; result = null; });
+    try {
+      final text = await DocumentTextExtractor.extract(doc.path!, doc.type);
+      if (text.trim().length < 40) {
+        throw Exception('No readable text was found. If this is a scanned PDF, OCR is required before it can be analyzed.');
+      }
+      final analysis = await OpenRouterDocumentAI.analyze(
+        fileName: doc.name, fileType: doc.type, text: text);
+      final encoded = jsonEncode(analysis);
+      final updated = doc.copyWith(status: 'Analyzed', analysisJson: encoded);
+      widget.onUpdate(updated);
+      if (mounted) setState(() => result = analysis);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final doc = widget.docs.isEmpty ? null : widget.docs.first;
+    final doc = widget.docs.isEmpty ? null : widget.docs[selectedIndex.clamp(0, widget.docs.length - 1)];
+    if (doc != null && result == null && doc.analysisJson != null) {
+      try { result = jsonDecode(doc.analysisJson!) as Map<String, dynamic>; } catch (_) {}
+    }
+    final data = result;
     final tabs = ['Overview', 'Key details', 'Risks', 'Actions'];
-    return PageBody(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      heading(
-          'Document analysis', 'Understand the important parts at a glance.'),
+    return PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      heading('Document analysis', 'Extract facts, understand obligations and identify risks.'),
       const SizedBox(height: 18),
       if (doc == null)
-        const EmptyState(
-            icon: Icons.document_scanner_rounded,
-            title: 'Add a document to begin',
-            subtitle: 'Upload a PDF or Word file to start your workspace.')
+        const EmptyState(icon: Icons.document_scanner_rounded, title: 'Add a document to begin',
+          subtitle: 'Upload a PDF, DOCX, TXT or RTF file. The analysis will be generated from its actual text.')
       else ...[
         Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(19)),
-            child: Row(children: [
-              Container(
-                  width: 46,
-                  height: 52,
-                  decoration: BoxDecoration(
-                      color: const Color(0xFFFFECEE),
-                      borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.picture_as_pdf_rounded,
-                      color: Color(0xFFE65E68), size: 26)),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(doc.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: navy)),
-                    const SizedBox(height: 4),
-                    Text('${doc.size}  ·  ${doc.type}',
-                        style: const TextStyle(color: muted, fontSize: 10))
-                  ])),
-              const Icon(Icons.more_horiz, color: muted),
-            ])),
-        const SizedBox(height: 17),
-        Container(
-            padding: const EdgeInsets.all(17),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(19)),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                Icon(Icons.auto_awesome, color: blue, size: 18),
-                SizedBox(width: 8),
-                Text('AI analysis workspace',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: navy)),
-                Spacer(),
-                Badge(label: Text('DEMO'))
-              ]),
-              const SizedBox(height: 14),
-              Wrap(
-                  spacing: 5,
-                  children: List.generate(
-                      tabs.length,
-                      (i) => ChoiceChip(
-                          label: Text(tabs[i]),
-                          selected: tab == i,
-                          onSelected: (_) => setState(() => tab = i),
-                          selectedColor: const Color(0xFFE7EDFF),
-                          labelStyle: TextStyle(
-                              fontSize: 10,
-                              color: tab == i ? blue : muted,
-                              fontWeight: FontWeight.w700)))),
-              const SizedBox(height: 17),
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.description_rounded, color: blue, size: 25),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 12)),
+                Text('${doc.size} · ${doc.type} · ${doc.status}',
+                  style: const TextStyle(color: muted, fontSize: 10))
+              ]))
+            ]),
+            if (widget.docs.length > 1) ...[
+              const SizedBox(height: 10),
+              DropdownButton<int>(
+                value: selectedIndex.clamp(0, widget.docs.length - 1),
+                isExpanded: true,
+                items: List.generate(widget.docs.length, (i) => DropdownMenuItem(
+                  value: i, child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis))),
+                onChanged: busy ? null : (v) => setState(() {
+                  selectedIndex = v ?? 0;
+                  result = null; error = null;
+                }),
+              )
+            ],
+            const SizedBox(height: 12),
+            SizedBox(width: double.infinity, child: FilledButton.icon(
+              onPressed: busy ? null : () => _analyze(doc),
+              icon: busy ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.auto_awesome_rounded),
+              label: Text(busy ? 'Reading and analyzing document…' : data == null ? 'Analyze with AI' : 'Run analysis again'),
+              style: FilledButton.styleFrom(backgroundColor: blue, foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14)),
+            )),
+            if (busy) const Padding(padding: EdgeInsets.only(top: 12),
+              child: LinearProgressIndicator(color: blue, backgroundColor: pale)),
+          ]),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 14),
+          Container(width: double.infinity, padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(14)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(Icons.error_outline_rounded, color: Color(0xFFD64D5A), size: 19),
+              const SizedBox(width: 9), Expanded(child: Text(error!,
+                style: const TextStyle(color: Color(0xFF9C3540), fontSize: 11, height: 1.5)))
+            ]))
+        ],
+        if (data != null) ...[
+          const SizedBox(height: 18),
+          Container(padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [Icon(Icons.verified_rounded, color: blue, size: 18),
+                SizedBox(width: 7), Text('Analysis generated from document text',
+                  style: TextStyle(color: navy, fontSize: 12, fontWeight: FontWeight.w800))]),
+              const SizedBox(height: 13),
+              Wrap(spacing: 5, children: List.generate(tabs.length, (i) => ChoiceChip(
+                label: Text(tabs[i]), selected: tab == i, onSelected: (_) => setState(() => tab = i),
+                selectedColor: const Color(0xFFE7EDFF),
+                labelStyle: TextStyle(fontSize: 10, color: tab == i ? blue : muted, fontWeight: FontWeight.w700)))),
+              const SizedBox(height: 16),
               if (tab == 0) ...[
-                const Text('Executive summary',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: navy,
-                        fontSize: 15)),
+                Text((data['document_type'] ?? 'Document').toString().toUpperCase(),
+                  style: const TextStyle(color: blue, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: .8)),
                 const SizedBox(height: 8),
-                const Text(
-                    'This document appears to outline a business agreement. Review the parties, scope, payment terms, and termination conditions before signing.',
-                    style: TextStyle(
-                        color: Color(0xFF58647A), height: 1.6, fontSize: 12)),
-                const SizedBox(height: 16),
-                const Row(children: [
-                  Expanded(child: MiniMetric(value: '12', label: 'Key points')),
-                  Expanded(
-                      child: MiniMetric(value: '3', label: 'Items to review')),
-                  Expanded(
-                      child: MiniMetric(value: '4 min', label: 'Read time'))
-                ]),
+                const Text('Executive summary', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
+                const SizedBox(height: 7),
+                Text((data['summary'] ?? 'No summary returned.').toString(),
+                  style: const TextStyle(color: Color(0xFF58647A), height: 1.6, fontSize: 12)),
+                if (data['confidence_notes'] != null) ...[
+                  const SizedBox(height: 12),
+                  Text('Review note: ${data['confidence_notes']}',
+                    style: const TextStyle(color: muted, fontSize: 10, height: 1.5))
+                ]
               ] else if (tab == 1) ...[
-                const DetailLine(
-                    label: 'Document type', value: 'Business agreement'),
-                const DetailLine(
-                    label: 'Primary subject',
-                    value: 'Commercial terms and obligations'),
-                const DetailLine(
-                    label: 'Parties', value: 'Two contracting entities'),
-                const DetailLine(
-                    label: 'Effective date', value: 'Requires verification'),
+                _stringList(data['key_details'], empty: 'No key details were identified.')
               ] else if (tab == 2) ...[
-                const RiskLine(
-                    level: 'High attention',
-                    title: 'Liability limitations',
-                    detail:
-                        'Review whether the liability cap is proportionate to the agreement value.',
-                    color: Color(0xFFE45D67)),
-                const RiskLine(
-                    level: 'Medium attention',
-                    title: 'Termination conditions',
-                    detail:
-                        'Confirm notice periods and any early termination fees.',
-                    color: Color(0xFFE5A13C)),
-                const RiskLine(
-                    level: 'Review',
-                    title: 'Confidentiality scope',
-                    detail: 'Check the duration and permitted disclosures.',
-                    color: blue),
+                _riskList(data['risks'])
               ] else ...[
-                const DetailLine(
-                    label: '1', value: 'Verify all party names and dates'),
-                const DetailLine(
-                    label: '2',
-                    value: 'Review liability and indemnity clauses'),
-                const DetailLine(
-                    label: '3',
-                    value: 'Confirm termination notice requirements'),
-              ],
-            ])),
-        const SizedBox(height: 16),
-        Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: const Color(0xFFEAF0FF),
-                borderRadius: BorderRadius.circular(18)),
-            child: const Row(children: [
-              Icon(Icons.info_outline_rounded, color: blue),
-              SizedBox(width: 10),
-              Expanded(
-                  child: Text(
-                      'Demo insights only. Connect a document extraction and AI service before relying on analysis.',
-                      style: TextStyle(
-                          color: Color(0xFF39558F), fontSize: 11, height: 1.5)))
-            ])),
-      ],
+                _stringList(data['action_items'], empty: 'No action items were identified.')
+              ]
+            ]))
+        ] else if (!busy && error == null) ...[
+          const SizedBox(height: 16),
+          const Text('Your analysis will appear here after you run the document through the AI model.',
+            style: TextStyle(color: muted, fontSize: 11, height: 1.5))
+        ],
+        const SizedBox(height: 14),
+        const Text('AI-generated analysis can miss context or misinterpret clauses. Verify important facts and seek professional advice for legal, financial or medical decisions.',
+          style: TextStyle(color: muted, fontSize: 10, height: 1.5))
+      ]
     ]));
   }
+
+  Widget _stringList(dynamic values, {required String empty}) {
+    final items = values is List ? values : const [];
+    if (items.isEmpty) return Text(empty, style: const TextStyle(color: muted, fontSize: 11));
+    return Column(children: items.map((v) => Container(
+      width: double.infinity, margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.check_circle_outline_rounded, color: blue, size: 16),
+        const SizedBox(width: 8), Expanded(child: Text(v.toString(),
+          style: const TextStyle(color: navy, fontSize: 11, height: 1.5)))
+      ])
+    )).toList());
+  }
+
+  Widget _riskList(dynamic values) {
+    final items = values is List ? values : const [];
+    if (items.isEmpty) return const Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
+      style: TextStyle(color: muted, fontSize: 11, height: 1.5));
+    return Column(children: items.map((v) {
+      final item = v is Map ? v : <String, dynamic>{'title': v.toString()};
+      final level = (item['level'] ?? 'Review').toString();
+      final color = level.toLowerCase().contains('high') ? const Color(0xFFD94F5C)
+        : level.toLowerCase().contains('medium') ? const Color(0xFFE19A35) : blue;
+      return RiskLine(level: level, title: (item['title'] ?? 'Review item').toString(),
+        detail: (item['detail'] ?? '').toString(), color: color);
+    }).toList());
+  }
 }
+
+class DocumentTextExtractor {
+  static Future<String> extract(String path, String type) async {
+    final file = File(path);
+    if (!await file.exists()) throw Exception('The original file is no longer available on this device. Please upload it again.');
+    final bytes = await file.readAsBytes();
+    final ext = type.toUpperCase();
+    String text;
+    if (ext == 'PDF') {
+      final pdf = sf.PdfDocument(inputBytes: bytes);
+      try { text = sf.PdfTextExtractor(pdf).extractText(); }
+      finally { pdf.dispose(); }
+    } else if (ext == 'DOCX') {
+      final archive = ZipDecoder().decodeBytes(bytes);
+      final entry = archive.files.where((f) => f.name == 'word/document.xml').firstOrNull;
+      if (entry == null) throw Exception('Could not find the text body inside this DOCX file.');
+      final xml = XmlDocument.parse(utf8.decode(entry.content as List<int>, allowMalformed: true));
+      text = xml.descendants.whereType<XmlElement>()
+        .where((e) => e.name.local == 't').map((e) => e.innerText).join(' ');
+    } else if (ext == 'TXT') {
+      text = utf8.decode(bytes, allowMalformed: true);
+    } else if (ext == 'RTF') {
+      text = utf8.decode(bytes, allowMalformed: true)
+        .replaceAll(RegExp(r"\\'[0-9a-fA-F]{2}"), ' ')
+        .replaceAll(RegExp(r'\\[a-zA-Z]+-?\\d* ?'), ' ')
+        .replaceAll(RegExp(r'[{}]'), ' ')
+        .replaceAll(RegExp(r'\\\\'), ' ');
+    } else {
+      throw Exception('Legacy .doc files are not supported yet. Save this file as .docx or PDF and upload it again.');
+    }
+    text = text.replaceAll(RegExp(r'[ \\t]+'), ' ').replaceAll(RegExp(r'\\n{3,}'), '\\n\\n').trim();
+    if (text.isEmpty) throw Exception('No readable text was extracted from this file.');
+    if (text.length > 65000) text = '${text.substring(0, 65000)}\\n[Document truncated for analysis due to context limits.]';
+    return text;
+  }
+}
+
+class OpenRouterDocumentAI {
+  static const _apiKey = String.fromEnvironment('OPENROUTER_API_KEY');
+  static const _model = String.fromEnvironment('OPENROUTER_MODEL', defaultValue: 'openrouter/free');
+
+  static Future<Map<String, dynamic>> analyze({
+    required String fileName, required String fileType, required String text}) async {
+    if (_apiKey.isEmpty) {
+      throw Exception('OpenRouter API key is missing. Run with --dart-define=OPENROUTER_API_KEY=YOUR_KEY. For production, move AI calls to a secure backend.');
+    }
+    final response = await http.post(
+      Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+      headers: {'Authorization': 'Bearer $_apiKey', 'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/aminemtar/Document-Analyser', 'X-Title': 'DocuMind AI'},
+      body: jsonEncode({
+        'model': _model,
+        'temperature': 0.2,
+        'response_format': {'type': 'json_object'},
+        'messages': [
+          {'role': 'system', 'content': 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.'},
+          {'role': 'user', 'content': 'Analyze this document. Filename: $fileName. Format: $fileType.\\n\\nDOCUMENT TEXT:\\n$text'}
+        ]
+      }),
+    ).timeout(const Duration(seconds: 90));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('AI service returned ${response.statusCode}: ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
+    }
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final content = payload['choices']?[0]?['message']?['content'];
+    if (content is! String || content.trim().isEmpty) throw Exception('The AI service returned an empty analysis.');
+    final cleaned = content.trim().replaceFirst(RegExp(r'^\`\`\`(?:json)?\\s*'), '').replaceFirst(RegExp(r'\\s*\`\`\`$'), '');
+    try { return jsonDecode(cleaned) as Map<String, dynamic>; }
+    catch (_) { throw Exception('The AI response was not valid structured JSON. Please run the analysis again.'); }
+  }
+}
+
 
 class MiniMetric extends StatelessWidget {
   final String value, label;
