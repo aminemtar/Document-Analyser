@@ -116,6 +116,24 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void _openMoreMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Align(alignment: Alignment.centerLeft, child: Text('More tools', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: navy))),
+          const SizedBox(height: 12),
+          ListTile(leading: const Icon(Icons.insights_rounded, color: blue), title: const Text('Insights'), onTap: () { Navigator.pop(sheetContext); setState(() => selected = 4); }),
+          ListTile(leading: const Icon(Icons.compare_arrows_rounded, color: blue), title: const Text('Compare documents'), onTap: () { Navigator.pop(sheetContext); setState(() => selected = 5); }),
+          ListTile(leading: const Icon(Icons.person_rounded, color: blue), title: const Text('Profile & settings'), onTap: () { Navigator.pop(sheetContext); setState(() => selected = 6); }),
+        ]),
+      )),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = [
@@ -152,8 +170,8 @@ class _AppShellState extends State<AppShell> {
         label: const Text('Add document', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selected > 4 ? 0 : selected,
-        onDestinationSelected: (i) => setState(() => selected = i),
+        selectedIndex: selected > 4 ? 4 : selected,
+        onDestinationSelected: (i) { if (i == 4) { _openMoreMenu(); } else { setState(() => selected = i); } },
         height: 70,
         backgroundColor: Colors.white,
         indicatorColor: const Color(0xFFE9EFFF),
@@ -472,7 +490,7 @@ class _ComparePageState extends State<ComparePage> {
       const DetailLine(label: 'Status', value: 'Connect AI analysis to generate a real comparison'),
     ],
   ]));
-  Widget _selector(String label, int value, ValueChanged<int> onChanged) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w700)), const SizedBox(height: 7), DropdownButton<int>(value: value.clamp(0, widget.docs.length - 1), isExpanded: true, underline: const SizedBox(), items: List.generate(widget.docs.length, (i) => DropdownMenuItem(value: i, child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))), onChanged: (v) { if (v != null) onChanged(v); })]));
+  Widget _selector(String label, int value, ValueChanged<int> onChanged) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(label, style: const TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w700)), const SizedBox(height: 7), DropdownButton<int>(value: value.clamp(0, widget.docs.length - 1).toInt(), isExpanded: true, underline: const SizedBox(), items: List.generate(widget.docs.length, (i) => DropdownMenuItem(value: i, child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))), onChanged: (v) { if (v != null) onChanged(v); })]));
 }
 
 class ProfilePage extends StatelessWidget {
