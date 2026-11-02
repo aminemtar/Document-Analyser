@@ -14,3 +14,8 @@ android/local.properties
 ios/Flutter/.last_build_id
 ios/Pods/
 ios/.symlinks/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
