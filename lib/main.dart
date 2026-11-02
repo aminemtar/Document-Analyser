@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
 
 const navy = Color(0xFF101B3D);
 const blue = Color(0xFF3568F5);
@@ -129,8 +130,8 @@ class _AppShellState extends State<AppShell> {
   Future<void> _pickDocument() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx', 'txt', 'rtf'],
-      withData: false,
+      allowedExtensions: ['pdf', 'docx', 'txt', 'rtf'],
+      withData: true,
       withReadStream: false,
     );
     if (result == null || result.files.isEmpty || !mounted) return;
@@ -139,10 +140,32 @@ class _AppShellState extends State<AppShell> {
     final size = file.size < 1024 * 1024
         ? '${(file.size / 1024).toStringAsFixed(0)} KB'
         : '${(file.size / (1024 * 1024)).toStringAsFixed(1)} MB';
-    setState(() {
-      documents.insert(0, DocItem(file.name, ext, size, 'Just now', 'Ready', path: file.path));
-      selected = 1;
-    });
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final storageDir = Directory('${appDir.path}/documents');
+      if (!await storageDir.exists()) await storageDir.create(recursive: true);
+      final safeName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+      final storedPath = '${storageDir.path}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
+      if (file.bytes != null) {
+        await File(storedPath).writeAsBytes(file.bytes!, flush: true);
+      } else if (file.path != null) {
+        await File(file.path!).copy(storedPath);
+      } else {
+        throw Exception('The selected file could not be read by the app.');
+      }
+      setState(() {
+        documents.insert(0, DocItem(file.name, ext, size, 'Just now', 'Ready', path: storedPath));
+        selected = 1;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not import this file: $e'),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+      return;
+    }
     await _saveDocuments();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -208,8 +231,8 @@ class _AppShellState extends State<AppShell> {
         final index = documents.indexWhere((d) => d.name == updated.name && d.path == updated.path);
         if (index >= 0) { documents[index] = updated; await _saveDocuments(); if (mounted) setState(() {}); }
       }),
-      const AssistantPage(),
-      const InsightsPage(),
+      AssistantPage(docs: documents),
+      InsightsPage(docs: documents),
       ComparePage(docs: documents),
       const ProfilePage(),
     ];
@@ -454,21 +477,13 @@ class HomePage extends StatelessWidget {
                   tint: const Color(0xFFEAF0FF),
                   color: blue)),
           const SizedBox(width: 10),
-          const Expanded(
+              Expanded(
               child: StatCard(
                   icon: Icons.check_circle_rounded,
-                  value: '2',
+                  value: '${docs.where((d) => d.analysisJson != null).length}',
                   label: 'Analyzed',
-                  tint: Color(0xFFE8F7F2),
-                  color: Color(0xFF16A77A))),
-          const SizedBox(width: 10),
-          const Expanded(
-              child: StatCard(
-                  icon: Icons.bolt_rounded,
-                  value: '86%',
-                  label: 'Time saved',
-                  tint: Color(0xFFFFF4E5),
-                  color: Color(0xFFE99A28))),
+                  tint: const Color(0xFFEAF0FF),
+                  color: blue)),
         ]),
         sectionTitle('Recent documents',
             action: 'View all', onTap: () => onNavigate(1)),
@@ -921,26 +936,34 @@ class DocumentTextExtractor {
 
 class OpenRouterDocumentAI {
   static String get _apiKey => dotenv.env['OPENROUTER_API_KEY']?.trim() ?? '';
-  static String get _model => dotenv.env['OPENROUTER_MODEL']?.trim().isNotEmpty == true
-      ? dotenv.env['OPENROUTER_MODEL']!.trim()
-      : 'openrouter/free';
+  static String get _model =>
+      dotenv.env['OPENROUTER_MODEL']?.trim().isNotEmpty == true
+          ? dotenv.env['OPENROUTER_MODEL']!.trim()
+          : 'openrouter/free';
 
-  static Future<Map<String, dynamic>> analyze({
-    required String fileName, required String fileType, required String text}) async {
+  static Future<String> _complete({
+    required String system,
+    required String user,
+    double temperature = 0.2,
+  }) async {
     if (_apiKey.isEmpty) {
       throw Exception('OpenRouter API key is missing. Add OPENROUTER_API_KEY to the .env file in the project root. For production, move AI calls to a secure backend.');
     }
     final response = await http.post(
       Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
-      headers: {'Authorization': 'Bearer $_apiKey', 'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://github.com/aminemtar/Document-Analyser', 'X-Title': 'DocuMind AI'},
+      headers: {
+        'Authorization': 'Bearer $_apiKey',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/aminemtar/Document-Analyser',
+        'X-Title': 'DocuMind AI',
+      },
       body: jsonEncode({
         'model': _model,
-        'temperature': 0.2,
+        'temperature': temperature,
         'messages': [
-          {'role': 'system', 'content': 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.'},
-          {'role': 'user', 'content': 'Analyze this document. Filename: $fileName. Format: $fileType.\\n\\nDOCUMENT TEXT:\\n$text'}
-        ]
+          {'role': 'system', 'content': system},
+          {'role': 'user', 'content': user},
+        ],
       }),
     ).timeout(const Duration(seconds: 90));
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -948,13 +971,62 @@ class OpenRouterDocumentAI {
     }
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final content = payload['choices']?[0]?['message']?['content'];
-    if (content is! String || content.trim().isEmpty) throw Exception('The AI service returned an empty analysis.');
-    final cleaned = content.trim().replaceFirst(RegExp(r'^\`\`\`(?:json)?\\s*'), '').replaceFirst(RegExp(r'\\s*\`\`\`$'), '');
-    try { return jsonDecode(cleaned) as Map<String, dynamic>; }
-    catch (_) { throw Exception('The AI response was not valid structured JSON. Please run the analysis again.'); }
+    if (content is! String || content.trim().isEmpty) {
+      throw Exception('The AI service returned an empty response.');
+    }
+    return content.trim();
+  }
+
+  static Map<String, dynamic> _decodeJson(String content) {
+    final cleaned = content
+        .replaceFirst(RegExp(r'^\x60\x60\x60(?:json)?\s*'), '')
+        .replaceFirst(RegExp(r'\s*\x60\x60\x60$'), '');
+    try {
+      return jsonDecode(cleaned) as Map<String, dynamic>;
+    } catch (_) {
+      throw Exception('The AI response was not valid structured JSON. Please run it again.');
+    }
+  }
+
+  static Future<Map<String, dynamic>> analyze({
+    required String fileName,
+    required String fileType,
+    required String text,
+  }) async {
+    final content = await _complete(
+      system: 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.',
+      user: 'Analyze this real uploaded document. Filename: $fileName. Format: $fileType.\n\nDOCUMENT TEXT:\n$text',
+    );
+    return _decodeJson(content);
+  }
+
+  static Future<String> ask({
+    required String question,
+    required List<Map<String, String>> documents,
+  }) {
+    final context = documents.map((d) =>
+      'FILE: ${d['name']}\nCONTENT:\n${d['text']}'
+    ).join('\n\n--- NEXT DOCUMENT ---\n\n');
+    return _complete(
+      system: 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful.',
+      user: 'QUESTION:\n$question\n\nUPLOADED DOCUMENTS:\n$context',
+      temperature: 0.1,
+    );
+  }
+
+  static Future<Map<String, dynamic>> compare({
+    required String firstName,
+    required String firstText,
+    required String secondName,
+    required String secondText,
+  }) async {
+    final content = await _complete(
+      system: 'You compare two real documents carefully. Only report differences supported by the supplied text. Do not assume that missing text means a clause was removed unless the comparison supports that conclusion. Return valid JSON only with keys: summary (string), similarities (array of strings), differences (array of objects with topic, document_a, document_b, significance), changed_dates_or_amounts (array of strings), review_points (array of strings). State when a value is not found. Do not give professional legal advice.',
+      user: 'Compare these two uploaded documents.\n\nDOCUMENT A: $firstName\n$firstText\n\nDOCUMENT B: $secondName\n$secondText',
+    );
+    return _decodeJson(content);
   }
 }
-
 
 class MiniMetric extends StatelessWidget {
   final String value, label;
@@ -1021,173 +1093,198 @@ class RiskLine extends StatelessWidget {
 }
 
 class AssistantPage extends StatefulWidget {
-  const AssistantPage({super.key});
+  final List<DocItem> docs;
+  const AssistantPage({super.key, required this.docs});
   @override
   State<AssistantPage> createState() => _AssistantPageState();
 }
 
 class _AssistantPageState extends State<AssistantPage> {
   final controller = TextEditingController();
+  final scrollController = ScrollController();
   final messages = <Map<String, String>>[
-    {
-      'role': 'ai',
-      'text':
-          'Hi! I’m your document assistant. Ask me to explain a clause, summarize a file, or find information across your documents.'
-    },
+    {'role': 'ai', 'text': 'Ask a question about your uploaded files. I’ll use their extracted text and name the source when possible.'},
   ];
-  void send() {
-    final text = controller.text.trim();
-    if (text.isEmpty) return;
-    setState(() {
-      messages.add({'role': 'user', 'text': text});
-      messages.add({
-        'role': 'ai',
-        'text':
-            'I can help with that once document AI is connected. This preview currently demonstrates the chat experience; no document content is being sent to an AI model yet.'
+  bool busy = false;
+  String? error;
+
+  Future<void> send() async {
+    final question = controller.text.trim();
+    if (question.isEmpty || busy) return;
+    if (widget.docs.isEmpty) {
+      setState(() {
+        messages.add({'role': 'user', 'text': question});
+        messages.add({'role': 'ai', 'text': 'Upload a PDF, DOCX, TXT or RTF file first. I need real document content to answer questions.'});
+        controller.clear();
       });
+      return;
+    }
+    setState(() {
+      messages.add({'role': 'user', 'text': question});
       controller.clear();
+      busy = true;
+      error = null;
     });
+    try {
+      final available = <Map<String, String>>[];
+      for (final doc in widget.docs) {
+        if (doc.path == null || doc.path!.isEmpty) continue;
+        try {
+          final text = await DocumentTextExtractor.extract(doc.path!, doc.type);
+          available.add({
+            'name': doc.name,
+            'text': text.length > 18000 ? text.substring(0, 18000) : text,
+          });
+        } catch (_) {
+          // A single unavailable file should not prevent answers from other files.
+        }
+      }
+      if (available.isEmpty) {
+        throw Exception('No readable uploaded files were found. Re-import the original documents and try again.');
+      }
+      final answer = await OpenRouterDocumentAI.ask(
+        question: question,
+        documents: available,
+      );
+      if (mounted) setState(() => messages.add({'role': 'ai', 'text': answer}));
+    } catch (e) {
+      if (mounted) setState(() {
+        error = e.toString().replaceFirst('Exception: ', '');
+        messages.add({'role': 'ai', 'text': 'I couldn’t complete that request. ${error!}'});
+      });
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
   void dispose() {
     controller.dispose();
+    scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => Column(children: [
-        Padding(
-            padding: const EdgeInsets.fromLTRB(20, 15, 20, 12),
-            child:
-                heading('AI assistant', 'Ask questions about your documents.')),
-        Expanded(
-            child: ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                itemCount: messages.length,
-                itemBuilder: (context, i) {
-                  final m = messages[i];
-                  final user = m['role'] == 'user';
-                  return Align(
-                      alignment:
-                          user ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                          constraints: const BoxConstraints(maxWidth: 310),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                              color: user ? blue : Colors.white,
-                              borderRadius: BorderRadius.circular(18)),
-                          child: Text(m['text']!,
-                              style: TextStyle(
-                                  color: user ? Colors.white : navy,
-                                  fontSize: 12,
-                                  height: 1.5))));
-                })),
-        Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
-            child: Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: controller,
-                      onSubmitted: (_) => send(),
-                      decoration: InputDecoration(
-                          hintText: 'Ask anything about your files...',
-                          filled: true,
-                          fillColor: pale,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(17),
-                              borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 15, vertical: 13)))),
-              const SizedBox(width: 9),
-              IconButton.filled(
-                  onPressed: send,
-                  style: IconButton.styleFrom(
-                      backgroundColor: blue, foregroundColor: Colors.white),
-                  icon: const Icon(Icons.arrow_upward_rounded)),
-            ])),
-      ]);
+    Padding(
+      padding: const EdgeInsets.fromLTRB(20, 15, 20, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        heading('AI assistant', 'Ask questions across your uploaded documents.'),
+        const SizedBox(height: 10),
+        Row(children: [
+          const Icon(Icons.folder_copy_outlined, color: blue, size: 16),
+          const SizedBox(width: 7),
+          Text('${widget.docs.length} real file(s) available',
+            style: const TextStyle(color: muted, fontSize: 11)),
+        ]),
+      ]),
+    ),
+    Expanded(
+      child: ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        itemCount: messages.length,
+        itemBuilder: (context, i) {
+          final m = messages[i];
+          final user = m['role'] == 'user';
+          return Align(
+            alignment: user ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 330),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: user ? blue : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(m['text']!,
+                style: TextStyle(color: user ? Colors.white : navy, fontSize: 12, height: 1.5)),
+            ),
+          );
+        },
+      ),
+    ),
+    if (busy) const LinearProgressIndicator(color: blue, backgroundColor: pale),
+    Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+      child: Row(children: [
+        Expanded(child: TextField(
+          controller: controller,
+          enabled: !busy,
+          onSubmitted: (_) => send(),
+          decoration: InputDecoration(
+            hintText: 'Ask about your uploaded files…',
+            filled: true,
+            fillColor: pale,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(17), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          ),
+        )),
+        const SizedBox(width: 9),
+        IconButton.filled(
+          onPressed: busy ? null : send,
+          style: IconButton.styleFrom(backgroundColor: blue, foregroundColor: Colors.white),
+          icon: const Icon(Icons.arrow_upward_rounded),
+        ),
+      ]),
+    ),
+  ]);
 }
 
 class InsightsPage extends StatelessWidget {
-  const InsightsPage({super.key});
+  final List<DocItem> docs;
+  const InsightsPage({super.key, required this.docs});
+
   @override
-  Widget build(BuildContext context) => PageBody(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        heading('Insights', 'A clearer view of your document activity.'),
-        const SizedBox(height: 20),
-        Row(children: const [
-          Expanded(
-              child: StatCard(
-                  icon: Icons.description_rounded,
-                  value: '24',
-                  label: 'Pages reviewed',
-                  tint: Color(0xFFEAF0FF),
-                  color: blue)),
-          SizedBox(width: 10),
-          Expanded(
-              child: StatCard(
-                  icon: Icons.timer_rounded,
-                  value: '3.8h',
-                  label: 'Time saved',
-                  tint: Color(0xFFE8F7F2),
-                  color: Color(0xFF16A77A)))
-        ]),
-        sectionTitle('Document activity'),
-        Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Documents analyzed',
-                  style: TextStyle(
-                      color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
-              const SizedBox(height: 18),
-              SizedBox(
-                  height: 145,
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List.generate(7, (i) {
-                        final h = <double>[48, 75, 55, 105, 82, 125, 92][i];
-                        return Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Container(
-                                  width: 22,
-                                  height: h,
-                                  decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [Color(0xFF79A0FF), blue]),
-                                      borderRadius: BorderRadius.circular(8))),
-                              const SizedBox(height: 8),
-                              Text(['M', 'T', 'W', 'T', 'F', 'S', 'S'][i],
-                                  style: const TextStyle(
-                                      fontSize: 9, color: muted))
-                            ]);
-                      }))),
-            ])),
-        sectionTitle('Common document categories'),
-        const CategoryBar(
-            label: 'Contracts', value: .72, count: '8 files', color: blue),
-        const CategoryBar(
-            label: 'Financial reports',
-            value: .48,
-            count: '5 files',
-            color: Color(0xFF16A77A)),
-        const CategoryBar(
-            label: 'Business documents',
-            value: .31,
-            count: '3 files',
-            color: Color(0xFFE6A13B)),
-      ]));
+  Widget build(BuildContext context) {
+    final analyzed = docs.where((d) => d.analysisJson != null).toList();
+    final typeCounts = <String, int>{};
+    for (final doc in docs) {
+      typeCounts[doc.type] = (typeCounts[doc.type] ?? 0) + 1;
+    }
+    return PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      heading('Insights', 'Live statistics from your own document library.'),
+      const SizedBox(height: 20),
+      Row(children: [
+        Expanded(child: StatCard(
+          icon: Icons.description_rounded,
+          value: '${docs.length}',
+          label: 'Uploaded files',
+          tint: const Color(0xFFEAF0FF),
+          color: blue,
+        )),
+        const SizedBox(width: 10),
+        Expanded(child: StatCard(
+          icon: Icons.check_circle_rounded,
+          value: '${analyzed.length}',
+          label: 'AI analyzed',
+          tint: const Color(0xFFEAF0FF),
+          color: blue,
+        )),
+      ]),
+      sectionTitle('Your file formats'),
+      if (docs.isEmpty)
+        const EmptyState(
+          icon: Icons.insights_rounded,
+          title: 'No activity yet',
+          subtitle: 'Upload your first real document to see library insights here.',
+        )
+      else
+        ...typeCounts.entries.map((entry) => CategoryBar(
+          label: entry.key,
+          value: entry.value / docs.length,
+          count: '${entry.value} file(s)',
+          color: blue,
+        )),
+      sectionTitle('Recently analyzed'),
+      if (analyzed.isEmpty)
+        const Text('No document has been analyzed yet.',
+          style: TextStyle(color: muted, fontSize: 11))
+      else
+        ...analyzed.take(5).map((doc) => DocumentTile(doc: doc)),
+    ]));
+  }
 }
 
 class CategoryBar extends StatelessWidget {
@@ -1231,88 +1328,182 @@ class ComparePage extends StatefulWidget {
 
 class _ComparePageState extends State<ComparePage> {
   int a = 0, b = 1;
+  bool busy = false;
+  String? error;
+  Map<String, dynamic>? comparison;
+
+  Future<void> _compare() async {
+    if (widget.docs.length < 2 || a == b || busy) return;
+    final first = widget.docs[a];
+    final second = widget.docs[b];
+    if (first.path == null || second.path == null) {
+      setState(() => error = 'One of the selected files is no longer available. Please re-import it.');
+      return;
+    }
+    setState(() { busy = true; error = null; comparison = null; });
+    try {
+      final firstText = await DocumentTextExtractor.extract(first.path!, first.type);
+      final secondText = await DocumentTextExtractor.extract(second.path!, second.type);
+      if (firstText.length < 20 || secondText.length < 20) {
+        throw Exception('One of the files does not contain enough readable text to compare.');
+      }
+      final result = await OpenRouterDocumentAI.compare(
+        firstName: first.name,
+        firstText: firstText.length > 28000 ? firstText.substring(0, 28000) : firstText,
+        secondName: second.name,
+        secondText: secondText.length > 28000 ? secondText.substring(0, 28000) : secondText,
+      );
+      if (mounted) setState(() => comparison = result);
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ComparePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (a >= widget.docs.length) a = 0;
+    if (b >= widget.docs.length) b = widget.docs.length > 1 ? 1 : 0;
+    if (oldWidget.docs.length != widget.docs.length) comparison = null;
+  }
+
   @override
   Widget build(BuildContext context) => PageBody(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        heading(
-            'Compare documents', 'Understand differences between two files.'),
-        const SizedBox(height: 20),
-        if (widget.docs.length < 2)
-          const EmptyState(
-              icon: Icons.compare_arrows_rounded,
-              title: 'Add two documents',
-              subtitle:
-                  'You need at least two files in your library to compare them.')
-        else ...[
-          _selector('Document A', a, (v) => setState(() => a = v)),
-          const SizedBox(height: 12),
-          _selector('Document B', b, (v) => setState(() => b = v)),
-          const SizedBox(height: 18),
-          Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF1C3476), Color(0xFF4778F4)]),
-                  borderRadius: BorderRadius.circular(20)),
-              child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.compare_arrows_rounded,
-                        color: Colors.white, size: 28),
-                    SizedBox(height: 12),
-                    Text('Side-by-side intelligence',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800)),
-                    SizedBox(height: 6),
-                    Text(
-                        'Compare key clauses, dates, amounts and obligations in one view.',
-                        style: TextStyle(
-                            color: Colors.white70, fontSize: 11, height: 1.5))
-                  ])),
-          sectionTitle('Comparison preview'),
-          const DetailLine(
-              label: 'Structure',
-              value: 'Both documents contain structured sections'),
-          const DetailLine(
-              label: 'Key terms', value: 'Differences require text extraction'),
-          const DetailLine(
-              label: 'Dates & amounts',
-              value: 'No values extracted in demo mode'),
-          const DetailLine(
-              label: 'Status',
-              value: 'Connect AI analysis to generate a real comparison'),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      heading('Compare documents', 'Find real differences between two uploaded files.'),
+      const SizedBox(height: 20),
+      if (widget.docs.length < 2)
+        const EmptyState(
+          icon: Icons.compare_arrows_rounded,
+          title: 'Add two documents',
+          subtitle: 'Import at least two real files into your library to compare their contents.',
+        )
+      else ...[
+        _selector('Document A', a, (v) => setState(() { a = v; comparison = null; error = null; })),
+        const SizedBox(height: 12),
+        _selector('Document B', b, (v) => setState(() { b = v; comparison = null; error = null; })),
+        const SizedBox(height: 16),
+        SizedBox(width: double.infinity, child: FilledButton.icon(
+          onPressed: busy || a == b ? null : _compare,
+          icon: busy
+            ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(Icons.compare_arrows_rounded),
+          label: Text(busy ? 'Extracting and comparing…' : 'Compare actual contents'),
+          style: FilledButton.styleFrom(backgroundColor: blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
+        )),
+        if (a == b)
+          const Padding(padding: EdgeInsets.only(top: 9), child: Text('Choose two different files.',
+            style: TextStyle(color: muted, fontSize: 11))),
+        if (error != null) ...[
+          const SizedBox(height: 14),
+          Container(width: double.infinity, padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(13)),
+            child: Text(error!, style: const TextStyle(color: Color(0xFF9C3540), fontSize: 11, height: 1.5))),
         ],
-      ]));
+        if (comparison != null) ...[
+          const SizedBox(height: 20),
+          _resultSection('Comparison summary', comparison!['summary']),
+          _resultList('Similarities', comparison!['similarities']),
+          _differenceList(comparison!['differences']),
+          _resultList('Changed dates and amounts', comparison!['changed_dates_or_amounts']),
+          _resultList('Points to review', comparison!['review_points']),
+          const SizedBox(height: 10),
+          const Text('AI comparison is based on extracted text only. Check the original files before relying on any finding.',
+            style: TextStyle(color: muted, fontSize: 10, height: 1.5)),
+        ],
+      ],
+    ]),
+  );
+
   Widget _selector(String label, int value, ValueChanged<int> onChanged) =>
-      Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(16)),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label,
-                style: const TextStyle(
-                    color: muted, fontSize: 10, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 7),
-            DropdownButton<int>(
-                value: value.clamp(0, widget.docs.length - 1).toInt(),
-                isExpanded: true,
-                underline: const SizedBox(),
-                items: List.generate(
-                    widget.docs.length,
-                    (i) => DropdownMenuItem(
-                        value: i,
-                        child: Text(widget.docs[i].name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12)))),
-                onChanged: (v) {
-                  if (v != null) onChanged(v);
-                })
-          ]));
+    Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 7),
+        DropdownButton<int>(
+          value: value.clamp(0, widget.docs.length - 1).toInt(),
+          isExpanded: true,
+          underline: const SizedBox(),
+          items: List.generate(widget.docs.length, (i) => DropdownMenuItem(
+            value: i,
+            child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+          )),
+          onChanged: busy ? null : (v) { if (v != null) onChanged(v); },
+        ),
+      ]),
+    );
+
+  Widget _resultSection(String title, dynamic value) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
+      const SizedBox(height: 7),
+      Text((value ?? 'No summary returned.').toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 11, height: 1.55)),
+    ]),
+  );
+
+  Widget _resultList(String title, dynamic values) {
+    final items = values is List ? values : const [];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
+        const SizedBox(height: 8),
+        ...items.map((item) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.circle, color: blue, size: 7),
+            const SizedBox(width: 8),
+            Expanded(child: Text(item.toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 11, height: 1.5))),
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  Widget _differenceList(dynamic values) {
+    final items = values is List ? values : const [];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Differences', style: TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
+        const SizedBox(height: 8),
+        ...items.map((entry) {
+          final item = entry is Map ? entry : <String, dynamic>{'topic': entry.toString()};
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text((item['topic'] ?? 'Difference').toString(), style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 11)),
+              const SizedBox(height: 6),
+              Text('A · ${item['document_a'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 10, height: 1.5)),
+              Text('B · ${item['document_b'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 10, height: 1.5)),
+              if (item['significance'] != null) ...[
+                const SizedBox(height: 5),
+                Text('Why it matters: ${item['significance']}', style: const TextStyle(color: navy, fontSize: 10, height: 1.5, fontWeight: FontWeight.w600)),
+              ],
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
 }
 
 class ProfilePage extends StatelessWidget {
