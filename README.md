@@ -1,46 +1,47 @@
 # DocuMind AI
 
-A premium blue Flutter workspace for organizing and understanding documents.
-
-## Current app screens
-
-- Home dashboard with document stats and recent files
-- Document library with search and file-type filters
-- Analysis workspace with overview, key details, risk review, and action items
-- AI assistant chat interface
-- Insights dashboard
-- Document comparison workspace
-- Profile and settings
+A premium blue Flutter document workspace with real local text extraction and AI-powered analysis.
 
 ## Run locally
-
-The repository starts with the Flutter app source. Generate the native Android and iOS runner projects once:
 
 ```bash
 git clone https://github.com/aminemtar/Document-Analyser.git
 cd Document-Analyser
 flutter create . --platforms=android,ios
 flutter pub get
-flutter run
 ```
 
-To run on a specific device:
+Set your OpenRouter key for a local test run:
 
 ```bash
-flutter devices
-flutter run -d <device-id>
+flutter run --dart-define=OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
 ```
 
-## Current implementation status
+Optional: choose a specific OpenRouter model:
 
-The interface is runnable and includes local document selection (PDF, DOC, DOCX, TXT and RTF), a locally persisted document library, navigation, search/filtering, and interactive chat/comparison screens.
+```bash
+flutter run --dart-define=OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY --dart-define=OPENROUTER_MODEL=openrouter/free
+```
 
-**Important:** AI responses and analysis content are currently demo placeholders. The app does not yet extract text from PDFs/Word files or send documents to an AI model. Connect a secure backend and an AI provider before treating analysis, risk flags, or comparisons as real results. Never put private API keys directly in the Flutter client.
+Get a key from [OpenRouter](https://openrouter.ai/keys). The default model route is `openrouter/free`, which routes to an available free model. Availability and rate limits depend on OpenRouter.
 
-## Stack
+## Implemented
 
-- Flutter / Dart
-- Material 3
-- Google Fonts (Inter)
-- File Picker
-- Shared Preferences
+- PDF text extraction (text-based PDFs)
+- DOCX text extraction
+- TXT and basic RTF text extraction
+- AI analysis through OpenRouter: summary, key details, potential risks, and action items
+- Analysis results saved locally with each document
+- Local document library and navigation
+
+## Current limitations
+
+- Scanned/image-only PDFs need OCR; they are detected as having no readable text and are not silently analyzed.
+- Legacy `.doc` files are not supported; convert them to `.docx` or PDF.
+- The assistant chat and document comparison screens are still UI previews; they are not connected to the AI service yet.
+- OpenRouter key passed with `--dart-define` is embedded in the app binary. This is suitable only for local testing. For a public release, route requests through a secure backend and keep the key server-side.
+- AI-generated risk notes are not legal, financial, or professional advice. Verify important findings against the source document.
+
+## Android
+
+The app uses Android compile SDK 36. Ensure Android SDK Platform 36 is installed in Android Studio.
