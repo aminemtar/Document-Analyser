@@ -448,7 +448,7 @@ class InsightsPage extends StatelessWidget {
       const Text('Documents analyzed', style: TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
       const SizedBox(height: 18),
       SizedBox(height: 145, child: Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisAlignment: MainAxisAlignment.spaceAround, children: List.generate(7, (i) {
-        final h = [48.0, 75, 55, 105, 82, 125, 92][i];
+        final h = <double>[48, 75, 55, 105, 82, 125, 92][i];
         return Column(mainAxisAlignment: MainAxisAlignment.end, children: [Container(width: 22, height: h, decoration: BoxDecoration(gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF79A0FF), blue]), borderRadius: BorderRadius.circular(8))), const SizedBox(height: 8), Text(['M','T','W','T','F','S','S'][i], style: const TextStyle(fontSize: 9, color: muted))]);
       }))),
     ])),
