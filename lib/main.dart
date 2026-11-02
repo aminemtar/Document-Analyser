@@ -6,6 +6,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:xml/xml.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +17,11 @@ const muted = Color(0xFF8792A8);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // Keep the app usable; the analysis screen explains how to configure the key.
+  }
   runApp(const DocuMindApp());
 }
 
@@ -914,13 +920,15 @@ class DocumentTextExtractor {
 }
 
 class OpenRouterDocumentAI {
-  static const _apiKey = String.fromEnvironment('OPENROUTER_API_KEY');
-  static const _model = String.fromEnvironment('OPENROUTER_MODEL', defaultValue: 'openrouter/free');
+  static String get _apiKey => dotenv.env['OPENROUTER_API_KEY']?.trim() ?? '';
+  static String get _model => dotenv.env['OPENROUTER_MODEL']?.trim().isNotEmpty == true
+      ? dotenv.env['OPENROUTER_MODEL']!.trim()
+      : 'openrouter/free';
 
   static Future<Map<String, dynamic>> analyze({
     required String fileName, required String fileType, required String text}) async {
     if (_apiKey.isEmpty) {
-      throw Exception('OpenRouter API key is missing. Run with --dart-define=OPENROUTER_API_KEY=YOUR_KEY. For production, move AI calls to a secure backend.');
+      throw Exception('OpenRouter API key is missing. Add OPENROUTER_API_KEY to the .env file in the project root. For production, move AI calls to a secure backend.');
     }
     final response = await http.post(
       Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
