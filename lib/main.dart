@@ -96,6 +96,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int selected = 0;
+  String? analysisDocumentPath;
   bool loading = true;
   final List<DocItem> documents = [];
 
@@ -222,12 +223,23 @@ class _AppShellState extends State<AppShell> {
       HomePage(
           docs: documents,
           onUpload: _pickDocument,
-          onNavigate: (i) => setState(() => selected = i)),
+          onNavigate: (i) => setState(() => selected = i),
+          onOpen: (doc) => setState(() {
+            analysisDocumentPath = doc.path;
+            selected = 2;
+          })),
       LibraryPage(
           docs: documents,
           onUpload: _pickDocument,
-          onOpen: (doc) => setState(() => selected = 2)),
-      AnalysisPage(docs: documents, onUpdate: (updated) async {
+          onOpen: (doc) => setState(() {
+            analysisDocumentPath = doc.path;
+            selected = 2;
+          })),
+      AnalysisPage(
+        docs: documents,
+        selectedPath: analysisDocumentPath,
+        onSelectPath: (path) => setState(() => analysisDocumentPath = path),
+        onUpdate: (updated) async {
         final index = documents.indexWhere((d) => d.name == updated.name && d.path == updated.path);
         if (index >= 0) { documents[index] = updated; await _saveDocuments(); if (mounted) setState(() {}); }
       }),
@@ -389,11 +401,13 @@ class HomePage extends StatelessWidget {
   final List<DocItem> docs;
   final VoidCallback onUpload;
   final ValueChanged<int> onNavigate;
+  final ValueChanged<DocItem> onOpen;
   const HomePage(
       {super.key,
       required this.docs,
       required this.onUpload,
-      required this.onNavigate});
+      required this.onNavigate,
+      required this.onOpen});
 
   @override
   Widget build(BuildContext context) => PageBody(
@@ -489,7 +503,7 @@ class HomePage extends StatelessWidget {
             action: 'View all', onTap: () => onNavigate(1)),
         ...docs
             .take(3)
-            .map((d) => DocumentTile(doc: d, onTap: () => onNavigate(2))),
+            .map((d) => DocumentTile(doc: d, onTap: () => onOpen(d))),
         sectionTitle('Explore your workspace'),
         GridView.count(
             shrinkWrap: true,
@@ -713,8 +727,16 @@ class _LibraryPageState extends State<LibraryPage> {
 
 class AnalysisPage extends StatefulWidget {
   final List<DocItem> docs;
+  final String? selectedPath;
+  final ValueChanged<String?> onSelectPath;
   final ValueChanged<DocItem> onUpdate;
-  const AnalysisPage({super.key, required this.docs, required this.onUpdate});
+  const AnalysisPage({
+    super.key,
+    required this.docs,
+    required this.selectedPath,
+    required this.onSelectPath,
+    required this.onUpdate,
+  });
   @override
   State<AnalysisPage> createState() => _AnalysisPageState();
 }
@@ -729,6 +751,14 @@ class _AnalysisPageState extends State<AnalysisPage> {
   @override
   void didUpdateWidget(covariant AnalysisPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedPath != widget.selectedPath && widget.selectedPath != null) {
+      final nextIndex = widget.docs.indexWhere((d) => d.path == widget.selectedPath);
+      if (nextIndex >= 0) {
+        selectedIndex = nextIndex;
+        result = null;
+        error = null;
+      }
+    }
     if (selectedIndex >= widget.docs.length) selectedIndex = 0;
   }
 
@@ -794,6 +824,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                   value: i, child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis))),
                 onChanged: busy ? null : (v) => setState(() {
                   selectedIndex = v ?? 0;
+                  widget.onSelectPath(widget.docs[selectedIndex].path);
                   result = null; error = null;
                 }),
               )
