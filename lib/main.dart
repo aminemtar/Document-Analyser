@@ -900,13 +900,13 @@ class DocumentTextExtractor {
     } else if (ext == 'RTF') {
       text = utf8.decode(bytes, allowMalformed: true)
         .replaceAll(RegExp(r"\\'[0-9a-fA-F]{2}"), ' ')
-        .replaceAll(RegExp(r'\\[a-zA-Z]+-?\\d* ?'), ' ')
+        .replaceAll(RegExp(r'\\[a-zA-Z]+-?\d* ?'), ' ')
         .replaceAll(RegExp(r'[{}]'), ' ')
         .replaceAll(RegExp(r'\\\\'), ' ');
     } else {
       throw Exception('Legacy .doc files are not supported yet. Save this file as .docx or PDF and upload it again.');
     }
-    text = text.replaceAll(RegExp(r'[ \t]+'), ' ').replaceAll(RegExp(r'\n{3,}'), '\\n\\n').trim();
+    text = text.replaceAll(RegExp(r'[ \t]+'), ' ').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
     if (text.isEmpty) throw Exception('No readable text was extracted from this file.');
     if (text.length > 65000) text = '${text.substring(0, 65000)}\n[Document truncated for analysis due to context limits.]';
     return text;
@@ -929,7 +929,6 @@ class OpenRouterDocumentAI {
       body: jsonEncode({
         'model': _model,
         'temperature': 0.2,
-        'response_format': {'type': 'json_object'},
         'messages': [
           {'role': 'system', 'content': 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.'},
           {'role': 'user', 'content': 'Analyze this document. Filename: $fileName. Format: $fileType.\\n\\nDOCUMENT TEXT:\\n$text'}
