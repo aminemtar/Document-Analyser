@@ -749,6 +749,15 @@ class _AnalysisPageState extends State<AnalysisPage> {
   Map<String, dynamic>? result;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.selectedPath != null) {
+      final index = widget.docs.indexWhere((d) => d.path == widget.selectedPath);
+      if (index >= 0) selectedIndex = index;
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant AnalysisPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedPath != widget.selectedPath && widget.selectedPath != null) {
