@@ -113,6 +113,11 @@ class _AppShellState extends State<AppShell> {
       try {
         final parsed = (jsonDecode(saved) as List)
             .map((e) => DocItem.fromJson(e))
+            // Drop old demo entries and stale records that have no real local file.
+            .where((doc) =>
+                doc.path != null &&
+                doc.path!.isNotEmpty &&
+                File(doc.path!).existsSync())
             .toList();
         documents
           ..clear()
@@ -501,9 +506,15 @@ class HomePage extends StatelessWidget {
         ]),
         sectionTitle('Recent documents',
             action: 'View all', onTap: () => onNavigate(1)),
-        ...docs
-            .take(3)
-            .map((d) => DocumentTile(doc: d, onTap: () => onOpen(d))),
+        if (docs.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text('Your imported files will appear here.',
+              style: TextStyle(color: muted, fontSize: 11)),
+          )
+        else
+          ...docs.take(3).map((d) =>
+              DocumentTile(doc: d, onTap: () => onOpen(d))),
         sectionTitle('Explore your workspace'),
         GridView.count(
             shrinkWrap: true,
