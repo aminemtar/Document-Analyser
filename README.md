@@ -46,3 +46,17 @@ Get an API key from [OpenRouter](https://openrouter.ai/keys). The default model 
 ## Android
 
 The app uses Android compile SDK 36. Ensure Android SDK Platform 36 is installed.
+
+
+## Real document workflow
+
+The app does not ship with sample/demo documents. Import your own files from the Library or Home screen. Imported files are copied into the app's private documents directory so their content remains available after the app is closed.
+
+- **Analyze:** extracts text from the selected PDF, DOCX, TXT or RTF file and sends that text to the configured OpenRouter model.
+- **AI Assistant:** extracts content from the files currently in your library and answers questions grounded in those documents. It identifies the source filename where possible.
+- **Compare:** extracts both selected files and asks the AI to return similarities, differences, changed dates/amounts and review points.
+- **Insights:** counts and format breakdowns are calculated from the actual library; no demo totals or charts are shown.
+
+Scanned/image-only PDFs need OCR and are not currently supported by the text extractor. Legacy .doc files are not accepted; save them as .docx or PDF first. Very large documents are truncated before being sent to the model, and AI output should always be checked against the original file.
+
+The OpenRouter key is read from .env. A bundled Flutter asset is extractable from a released app, so this setup is suitable for local development only; use a secure backend before public release.
