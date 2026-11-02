@@ -1,47 +1,48 @@
 # DocuMind AI
 
-A premium blue Flutter document workspace with real local text extraction and AI-powered analysis.
+A premium blue Flutter document workspace with local text extraction and AI-powered analysis.
 
-## Run locally
+## Setup
 
 ```bash
 git clone https://github.com/aminemtar/Document-Analyser.git
 cd Document-Analyser
 flutter create . --platforms=android,ios
+cp .env.example .env
+```
+
+Open the new `.env` file and add your OpenRouter API key:
+
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=openrouter/free
+```
+
+Then run:
+
+```bash
 flutter pub get
+flutter run
 ```
 
-Set your OpenRouter key for a local test run:
-
-```bash
-flutter run --dart-define=OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
-```
-
-Optional: choose a specific OpenRouter model:
-
-```bash
-flutter run --dart-define=OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY --dart-define=OPENROUTER_MODEL=openrouter/free
-```
-
-Get a key from [OpenRouter](https://openrouter.ai/keys). The default model route is `openrouter/free`, which routes to an available free model. Availability and rate limits depend on OpenRouter.
+Get an API key from [OpenRouter](https://openrouter.ai/keys). The default model route is `openrouter/free`; availability and rate limits depend on OpenRouter.
 
 ## Implemented
 
 - PDF text extraction (text-based PDFs)
 - DOCX text extraction
 - TXT and basic RTF text extraction
-- AI analysis through OpenRouter: summary, key details, potential risks, and action items
+- OpenRouter AI analysis: summary, key details, potential risks, and action items
 - Analysis results saved locally with each document
-- Local document library and navigation
 
-## Current limitations
+## Current limitations and security
 
-- Scanned/image-only PDFs need OCR; they are detected as having no readable text and are not silently analyzed.
+- Scanned/image-only PDFs need OCR.
 - Legacy `.doc` files are not supported; convert them to `.docx` or PDF.
-- The assistant chat and document comparison screens are still UI previews; they are not connected to the AI service yet.
-- OpenRouter key passed with `--dart-define` is embedded in the app binary. This is suitable only for local testing. For a public release, route requests through a secure backend and keep the key server-side.
-- AI-generated risk notes are not legal, financial, or professional advice. Verify important findings against the source document.
+- The assistant chat and document comparison screens are still previews.
+- **Important:** Flutter dotenv loads `.env` as a bundled app asset. It prevents committing the key to Git when `.env` is ignored, but it does NOT hide the key from someone who extracts the installed APK/IPA. Before publishing, move OpenRouter requests to a secure backend and keep the key server-side.
+- AI-generated risk notes are not legal, financial, or professional advice.
 
 ## Android
 
-The app uses Android compile SDK 36. Ensure Android SDK Platform 36 is installed in Android Studio.
+The app uses Android compile SDK 36. Ensure Android SDK Platform 36 is installed.
