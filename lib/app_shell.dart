@@ -356,7 +356,7 @@ class _AppShellState extends State<AppShell> {
             const SizedBox(width: 10),
             // One flexible text, so a small screen or a large text setting
             // shortens the title instead of overflowing the app bar.
-            const Flexible(
+            Flexible(
                 child: Text.rich(
                     TextSpan(
                         style: TextStyle(
@@ -388,7 +388,7 @@ class _AppShellState extends State<AppShell> {
           selectedIndex: Pages.tabFor(selected),
           onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
           height: 70,
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           indicatorColor: AppColors.surfaceTint,
           destinations: const [
             NavigationDestination(

@@ -43,15 +43,15 @@ class _LibraryPageState extends State<LibraryPage> {
           'Document library', '${widget.docs.length} files in your workspace',
           trailing: IconButton(
               onPressed: widget.onUpload,
-              icon: const Icon(Icons.add_circle, color: blue, size: 30))),
+              icon: Icon(Icons.add_circle, color: blue, size: 30))),
       const SizedBox(height: 20),
       TextField(
           onChanged: (v) => setState(() => query = v),
           decoration: InputDecoration(
               hintText: 'Search documents...',
-              prefixIcon: const Icon(Icons.search_rounded, color: muted),
+              prefixIcon: Icon(Icons.search_rounded, color: muted),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppColors.surface,
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none),
@@ -64,7 +64,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   label: Text(f),
                   selected: filter == f,
                   onSelected: (_) => setState(() => filter = f),
-                  selectedColor: const Color(0xFFE4EBFF),
+                  selectedColor: AppColors.accentSoft,
                   labelStyle: TextStyle(
                       color: filter == f ? blue : muted,
                       fontWeight: FontWeight.w700)))
@@ -76,7 +76,7 @@ class _LibraryPageState extends State<LibraryPage> {
             title: 'No documents found',
             subtitle: 'Try another search or upload a document.'),
       if (items.isNotEmpty)
-        const Padding(
+        Padding(
             padding: EdgeInsets.only(bottom: 10),
             child: Text('Tap to analyze · hold to rename · swipe to delete',
                 style: TextStyle(color: muted, fontSize: 13))),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_controller.dart';
 import '../widgets/common.dart';
 import 'paywall_page.dart';
 
@@ -22,11 +23,11 @@ class ProfilePage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(22)),
-            child: const Column(children: [
+                color: AppColors.surface, borderRadius: BorderRadius.circular(22)),
+            child: Column(children: [
               CircleAvatar(
                   radius: 34,
-                  backgroundColor: Color(0xFFE7EDFF),
+                  backgroundColor: AppColors.accentSoft,
                   child: Text('M',
                       style: TextStyle(
                           color: blue,
@@ -50,15 +51,53 @@ class ProfilePage extends StatelessWidget {
             trailing: 'EN'),
         Card(
             margin: const EdgeInsets.only(bottom: 9),
+            child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.dark_mode_outlined, color: blue),
+                        const SizedBox(width: 16),
+                        Text('Appearance',
+                            style: TextStyle(
+                                color: navy,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                      ]),
+                      const SizedBox(height: 12),
+                      ValueListenableBuilder<ThemeMode>(
+                          valueListenable: ThemeController.mode,
+                          builder: (context, mode, _) => SizedBox(
+                              width: double.infinity,
+                              child: SegmentedButton<ThemeMode>(
+                                  showSelectedIcon: false,
+                                  segments: const [
+                                    ButtonSegment(
+                                        value: ThemeMode.system,
+                                        label: Text('System')),
+                                    ButtonSegment(
+                                        value: ThemeMode.light,
+                                        label: Text('Light')),
+                                    ButtonSegment(
+                                        value: ThemeMode.dark,
+                                        label: Text('Dark')),
+                                  ],
+                                  selected: {mode},
+                                  onSelectionChanged: (selection) =>
+                                      ThemeController.set(selection.first)))),
+                    ]))),
+        Card(
+            margin: const EdgeInsets.only(bottom: 9),
             child: SwitchListTile(
-                secondary: const Icon(Icons.notifications_none_rounded,
+                secondary: Icon(Icons.notifications_none_rounded,
                     color: blue),
-                title: const Text('Date reminders',
+                title: Text('Date reminders',
                     style: TextStyle(
                         color: navy,
                         fontWeight: FontWeight.w700,
                         fontSize: 14)),
-                subtitle: const Text(
+                subtitle: Text(
                     'A notification at 9:00 the day before and on the day of dates found in your documents',
                     style: TextStyle(color: muted, fontSize: 12)),
                 value: remindersEnabled,
@@ -72,7 +111,7 @@ class ProfilePage extends StatelessWidget {
             title: 'Help & support',
             subtitle: 'Get assistance'),
         const SizedBox(height: 18),
-        const Center(
+        Center(
             child: Text('DocuMind AI  ·  Version 1.0.0',
                 style: TextStyle(color: muted, fontSize: 12))),
       ]));

@@ -30,7 +30,7 @@ class AttentionCard extends StatelessWidget {
       decoration: BoxDecoration(
           color: AppColors.surface, borderRadius: BorderRadius.circular(AppRadius.md)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Row(children: [
+        Row(children: [
           Icon(Icons.notifications_active_outlined, color: blue, size: 20),
           SizedBox(width: 8),
           Text('Needs attention',
@@ -67,7 +67,7 @@ class AttentionCard extends StatelessWidget {
                       Text(item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: navy,
                               fontSize: 14,
                               fontWeight: FontWeight.w700)),
@@ -77,9 +77,9 @@ class AttentionCard extends StatelessWidget {
                               : 'High risk · ${item.doc.name}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: muted, fontSize: 12)),
+                          style: TextStyle(color: muted, fontSize: 12)),
                     ])),
-                const Icon(Icons.chevron_right_rounded, color: muted),
+                Icon(Icons.chevron_right_rounded, color: muted),
               ]),
             ),
           );
@@ -88,7 +88,7 @@ class AttentionCard extends StatelessWidget {
           Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text('+${items.length - 4} more in your analyses',
-                  style: const TextStyle(color: muted, fontSize: 12))),
+                  style: TextStyle(color: muted, fontSize: 12))),
       ]),
     );
   }

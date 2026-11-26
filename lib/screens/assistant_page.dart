@@ -152,13 +152,13 @@ class _AssistantPageState extends State<AssistantPage> {
             trailing: IconButton(
                 tooltip: 'Clear conversation',
                 onPressed: busy ? null : _clearChat,
-                icon: const Icon(Icons.delete_sweep_outlined, color: muted))),
+                icon: Icon(Icons.delete_sweep_outlined, color: muted))),
         const SizedBox(height: 10),
         Row(children: [
-          const Icon(Icons.folder_copy_outlined, color: blue, size: 16),
+          Icon(Icons.folder_copy_outlined, color: blue, size: 16),
           const SizedBox(width: 7),
           Text('${widget.docs.length} real file(s) available',
-            style: const TextStyle(color: muted, fontSize: 13)),
+            style: TextStyle(color: muted, fontSize: 13)),
         ]),
       ]),
     ),
@@ -177,7 +177,7 @@ class _AssistantPageState extends State<AssistantPage> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: user ? blue : Colors.white,
+                color: user ? blue : AppColors.surface,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(m['text']!,
@@ -187,9 +187,9 @@ class _AssistantPageState extends State<AssistantPage> {
         },
       ),
     ),
-    if (busy) const LinearProgressIndicator(color: blue, backgroundColor: pale),
+    if (busy) LinearProgressIndicator(color: blue, backgroundColor: pale),
     Container(
-      color: Colors.white,
+      color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
       child: Row(children: [
         Expanded(child: TextField(

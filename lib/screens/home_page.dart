@@ -102,7 +102,7 @@ class HomePage extends StatelessWidget {
                   icon: Icons.folder_copy_rounded,
                   value: '${docs.length}',
                   label: 'Documents',
-                  tint: const Color(0xFFEAF0FF),
+                  tint: AppColors.surfaceTint,
                   color: blue)),
           const SizedBox(width: 10),
               Expanded(
@@ -110,14 +110,14 @@ class HomePage extends StatelessWidget {
                   icon: Icons.check_circle_rounded,
                   value: '${docs.where((d) => d.analysisJson != null).length}',
                   label: 'Analyzed',
-                  tint: const Color(0xFFEAF0FF),
+                  tint: AppColors.surfaceTint,
                   color: blue)),
         ]),
         AttentionCard(docs: docs, onOpen: onOpen),
         sectionTitle('Recent documents',
             action: 'View all', onTap: () => onNavigate(1)),
         if (docs.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text('Your imported files will appear here.',
               style: TextStyle(color: muted, fontSize: 13)),

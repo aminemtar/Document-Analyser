@@ -22,13 +22,13 @@ Widget heading(String title, String subtitle, {Widget? trailing}) => Row(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 25,
                   fontWeight: FontWeight.w800,
                   color: navy,
                   letterSpacing: -0.8)),
           const SizedBox(height: 5),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: muted)),
+          Text(subtitle, style: TextStyle(fontSize: 13, color: muted)),
         ])),
         if (trailing != null) trailing,
       ],
@@ -40,13 +40,13 @@ Widget sectionTitle(String title, {String? action, VoidCallback? onTap}) =>
       child: Row(children: [
         Expanded(
             child: Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 16, fontWeight: FontWeight.w800, color: navy))),
         if (action != null)
           TextButton(
               onPressed: onTap,
               child: Text(action,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: blue, fontWeight: FontWeight.w700))),
       ]),
     );
@@ -66,7 +66,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(19)),
+          color: AppColors.surface, borderRadius: BorderRadius.circular(19)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
             width: 32,
@@ -76,9 +76,9 @@ class StatCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 17)),
         const SizedBox(height: 10),
         Text(value,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 21, fontWeight: FontWeight.w800, color: navy)),
-        Text(label, style: const TextStyle(fontSize: 12, color: muted)),
+        Text(label, style: TextStyle(fontSize: 12, color: muted)),
       ]));
 }
 
@@ -99,7 +99,7 @@ class ActionTile extends StatelessWidget {
       child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(18)),
+              color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -107,13 +107,13 @@ class ActionTile extends StatelessWidget {
                 Icon(icon, color: blue, size: 22),
                 const SizedBox(height: 9),
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: navy)),
                 const SizedBox(height: 3),
                 Text(subtitle,
-                    style: const TextStyle(fontSize: 12, color: muted)),
+                    style: TextStyle(fontSize: 12, color: muted)),
               ])));
 }
 
@@ -154,24 +154,24 @@ class DocumentTile extends StatelessWidget {
           title: Text(doc.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14, fontWeight: FontWeight.w700, color: navy)),
           subtitle: Text('${doc.size}  ·  ${doc.date}',
-              style: const TextStyle(fontSize: 12, color: muted)),
+              style: TextStyle(fontSize: 12, color: muted)),
           trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
                   color: doc.status == 'Analyzed'
-                      ? const Color(0xFFEAF7F2)
-                      : const Color(0xFFFFF4E5),
+                      ? AppColors.successSoft
+                      : AppColors.warningSoft,
                   borderRadius: BorderRadius.circular(20)),
               child: Text(doc.status,
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: doc.status == 'Analyzed'
-                          ? const Color(0xFF15966D)
-                          : const Color(0xFFBD8126)))),
+                          ? AppColors.success
+                          : AppColors.warning))),
         ));
   }
 }
@@ -183,9 +183,9 @@ class MiniMetric extends StatelessWidget {
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(value,
-            style: const TextStyle(
+            style: TextStyle(
                 color: blue, fontSize: 19, fontWeight: FontWeight.w800)),
-        Text(label, style: const TextStyle(color: muted, fontSize: 11))
+        Text(label, style: TextStyle(color: muted, fontSize: 11))
       ]);
 }
 
@@ -199,10 +199,10 @@ class DetailLine extends StatelessWidget {
         SizedBox(
             width: 112,
             child: Text(label,
-                style: const TextStyle(color: muted, fontSize: 13))),
+                style: TextStyle(color: muted, fontSize: 13))),
         Expanded(
             child: Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     color: navy, fontWeight: FontWeight.w600, fontSize: 13)))
       ]));
 }
@@ -232,11 +232,11 @@ class RiskLine extends StatelessWidget {
                 color: color)),
         const SizedBox(height: 5),
         Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.w800, fontSize: 14, color: navy)),
         const SizedBox(height: 4),
         Text(detail,
-            style: const TextStyle(fontSize: 12, color: muted, height: 1.45))
+            style: TextStyle(fontSize: 12, color: muted, height: 1.45))
       ]));
 }
 
@@ -257,9 +257,9 @@ class CategoryBar extends StatelessWidget {
         Row(children: [
           Expanded(
               child: Text(label,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: navy, fontWeight: FontWeight.w700, fontSize: 13))),
-          Text(count, style: const TextStyle(color: muted, fontSize: 12))
+          Text(count, style: TextStyle(color: muted, fontSize: 12))
         ]),
         const SizedBox(height: 8),
         ClipRRect(
@@ -267,7 +267,7 @@ class CategoryBar extends StatelessWidget {
             child: LinearProgressIndicator(
                 value: value,
                 minHeight: 8,
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.surface,
                 color: color))
       ]));
 }
@@ -288,12 +288,12 @@ class SettingsRow extends StatelessWidget {
       child: ListTile(
           leading: Icon(icon, color: blue),
           title: Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   color: navy, fontWeight: FontWeight.w700, fontSize: 14)),
           subtitle: Text(subtitle,
-              style: const TextStyle(color: muted, fontSize: 12)),
+              style: TextStyle(color: muted, fontSize: 12)),
           trailing: Text(trailing ?? '›',
-              style: const TextStyle(color: muted, fontSize: 16))));
+              style: TextStyle(color: muted, fontSize: 16))));
 }
 
 class EmptyState extends StatelessWidget {
@@ -309,16 +309,16 @@ class EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 38, horizontal: 24),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(20)),
+          color: AppColors.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(children: [
         Icon(icon, size: 36, color: blue),
         const SizedBox(height: 12),
         Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 color: navy, fontWeight: FontWeight.w800, fontSize: 14)),
         const SizedBox(height: 6),
         Text(subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: muted, fontSize: 13, height: 1.5))
+            style: TextStyle(color: muted, fontSize: 13, height: 1.5))
       ]));
 }

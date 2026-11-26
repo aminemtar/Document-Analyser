@@ -22,7 +22,7 @@ class InsightsPage extends StatelessWidget {
           icon: Icons.description_rounded,
           value: '${docs.length}',
           label: 'Uploaded files',
-          tint: const Color(0xFFEAF0FF),
+          tint: AppColors.surfaceTint,
           color: blue,
         )),
         const SizedBox(width: 10),
@@ -30,7 +30,7 @@ class InsightsPage extends StatelessWidget {
           icon: Icons.check_circle_rounded,
           value: '${analyzed.length}',
           label: 'AI analyzed',
-          tint: const Color(0xFFEAF0FF),
+          tint: AppColors.surfaceTint,
           color: blue,
         )),
       ]),
@@ -50,7 +50,7 @@ class InsightsPage extends StatelessWidget {
         )),
       sectionTitle('Recently analyzed'),
       if (analyzed.isEmpty)
-        const Text('No document has been analyzed yet.',
+        Text('No document has been analyzed yet.',
           style: TextStyle(color: muted, fontSize: 13))
       else
         ...analyzed.take(5).map((doc) => DocumentTile(doc: doc)),

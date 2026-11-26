@@ -47,7 +47,7 @@ class _PaywallPageState extends State<PaywallPage> {
         const SizedBox(width: 12),
         Expanded(
             child: Text(text,
-                style: const TextStyle(
+                style: TextStyle(
                     color: navy, fontSize: 14, fontWeight: FontWeight.w600))),
       ]));
 
@@ -68,7 +68,7 @@ class _PaywallPageState extends State<PaywallPage> {
                 color: selected ? AppColors.surfaceTint : AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: selected ? blue : const Color(0xFFDDE3F0),
+                    color: selected ? blue : AppColors.border,
                     width: selected ? 2 : 1)),
             child: Row(children: [
               Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
@@ -80,7 +80,7 @@ class _PaywallPageState extends State<PaywallPage> {
                       children: [
                     Row(children: [
                       Text(title,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: navy,
                               fontSize: 15,
                               fontWeight: FontWeight.w800)),
@@ -100,10 +100,10 @@ class _PaywallPageState extends State<PaywallPage> {
                       ],
                     ]),
                     Text(note,
-                        style: const TextStyle(color: muted, fontSize: 12)),
+                        style: TextStyle(color: muted, fontSize: 12)),
                   ])),
               Text(price,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: navy, fontSize: 16, fontWeight: FontWeight.w800)),
             ])));
   }
@@ -177,7 +177,7 @@ class _PaywallPageState extends State<PaywallPage> {
                   decoration: BoxDecoration(
                       color: AppColors.warningSoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm)),
-                  child: const Text(
+                  child: Text(
                       'Preview: purchases are not connected yet. Nothing is charged, and the prices shown are examples.',
                       style: TextStyle(
                           color: AppColors.warning, fontSize: 12, height: 1.4))),
@@ -199,9 +199,9 @@ class _PaywallPageState extends State<PaywallPage> {
             Center(
                 child: TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Not now',
+                    child: Text('Not now',
                         style: TextStyle(color: muted)))),
-            const Center(
+            Center(
                 child: Text(
                     'Free plan: ${UsageService.freeMonthlyAnalyses} analyses per month.',
                     style: TextStyle(color: muted, fontSize: 12))),

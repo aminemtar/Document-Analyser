@@ -2,9 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:documind_ai/main.dart';
+import 'package:documind_ai/theme/app_theme.dart';
+import 'package:documind_ai/theme/theme_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // The appearance choice is global, so every test starts from "System".
+  setUp(() => ThemeController.mode.value = ThemeMode.system);
+
+  testWidgets('dark mode repaints the app and keeps the current page',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+    expect(AppPalette.dark, isFalse);
+
+    Color scaffoldColor() => Theme.of(tester.element(find.byType(Scaffold).first))
+        .scaffoldBackgroundColor;
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    final light = scaffoldColor();
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(AppPalette.dark, isTrue);
+    expect(find.text('Appearance'), findsOneWidget, reason: 'still on Profile');
+    expect(scaffoldColor(), isNot(light));
+    expect(scaffoldColor(), const Color(0xFF0C1220));
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('System'));
+    await tester.pumpAndSettle();
+    expect(AppPalette.dark, isFalse);
+  });
+
+  test('palette tokens switch between the light and dark sets', () {
+    addTearDown(() => AppPalette.dark = false);
+    AppPalette.dark = false;
+    final lightNavy = navy;
+    final lightSurface = AppColors.surface;
+    AppPalette.dark = true;
+    expect(navy, isNot(lightNavy));
+    expect(AppColors.surface, isNot(lightSurface));
+    // Text must stay readable: dark-mode text is lighter than its surface.
+    expect(navy.computeLuminance(), greaterThan(AppColors.surface.computeLuminance()));
+    expect(muted.computeLuminance(), greaterThan(AppColors.surface.computeLuminance()));
+  });
 
   testWidgets('DocuMind opens without sample documents', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarded': true});

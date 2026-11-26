@@ -121,16 +121,16 @@ class _AnalysisPageState extends State<AnalysisPage> {
       else ...[
         Container(
           padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.description_rounded, color: blue, size: 25),
+              Icon(Icons.description_rounded, color: blue, size: 25),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 14)),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 14)),
                 Text('${doc.size} · ${doc.type} · ${doc.status}',
-                  style: const TextStyle(color: muted, fontSize: 12))
+                  style: TextStyle(color: muted, fontSize: 12))
               ]))
             ]),
             if (widget.docs.length > 1) ...[
@@ -156,60 +156,60 @@ class _AnalysisPageState extends State<AnalysisPage> {
               style: FilledButton.styleFrom(backgroundColor: blue, foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14)),
             )),
-            if (busy) const Padding(padding: EdgeInsets.only(top: 12),
+            if (busy) Padding(padding: EdgeInsets.only(top: 12),
               child: LinearProgressIndicator(color: blue, backgroundColor: pale)),
           ]),
         ),
         if (error != null) ...[
           const SizedBox(height: 14),
           Container(width: double.infinity, padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: AppColors.dangerSoft, borderRadius: BorderRadius.circular(14)),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Icon(Icons.error_outline_rounded, color: Color(0xFFD64D5A), size: 19),
               const SizedBox(width: 9), Expanded(child: Text(error!,
-                style: const TextStyle(color: Color(0xFF9C3540), fontSize: 13, height: 1.5)))
+                style: TextStyle(color: AppColors.dangerText, fontSize: 13, height: 1.5)))
             ]))
         ],
         if (data != null) ...[
           const SizedBox(height: 18),
           Container(padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Icon(Icons.verified_rounded, color: blue, size: 18),
+                Icon(Icons.verified_rounded, color: blue, size: 18),
                 const SizedBox(width: 7),
-                const Expanded(child: Text('Analysis generated from document text',
+                Expanded(child: Text('Analysis generated from document text',
                   style: TextStyle(color: navy, fontSize: 14, fontWeight: FontWeight.w800))),
                 IconButton(
                   tooltip: 'Copy summary',
                   onPressed: () => _copySummary(doc, data),
-                  icon: const Icon(Icons.copy_rounded, color: blue, size: 20)),
+                  icon: Icon(Icons.copy_rounded, color: blue, size: 20)),
               ]),
               const SizedBox(height: 8),
               _countsRow(data),
               const SizedBox(height: 13),
               Wrap(spacing: 5, children: List.generate(tabs.length, (i) => ChoiceChip(
                 label: Text(tabs[i]), selected: tab == i, onSelected: (_) => setState(() => tab = i),
-                selectedColor: const Color(0xFFE7EDFF),
+                selectedColor: AppColors.accentSoft,
                 labelStyle: TextStyle(fontSize: 12, color: tab == i ? blue : muted, fontWeight: FontWeight.w700)))),
               const SizedBox(height: 16),
               if (tab == 0) ...[
                 _reviewGauge(data['review_level']),
                 Text((data['document_type'] ?? 'Document').toString().toUpperCase(),
-                  style: const TextStyle(color: blue, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: .8)),
+                  style: TextStyle(color: blue, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: .8)),
                 const SizedBox(height: 8),
-                const Text('Executive summary', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
+                Text('Executive summary', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
                 const SizedBox(height: 7),
                 Text((data['summary'] ?? 'No summary returned.').toString(),
-                  style: const TextStyle(color: Color(0xFF58647A), height: 1.6, fontSize: 14)),
+                  style: TextStyle(color: AppColors.bodyText, height: 1.6, fontSize: 14)),
                 if (data['confidence_notes'] != null) ...[
                   const SizedBox(height: 12),
                   Text('Review note: ${data['confidence_notes']}',
-                    style: const TextStyle(color: muted, fontSize: 12, height: 1.5))
+                    style: TextStyle(color: muted, fontSize: 12, height: 1.5))
                 ],
                 if (_listOf(data['suggested_questions']).isNotEmpty && widget.onAsk != null) ...[
                   const SizedBox(height: 18),
-                  const Text('Ask about this document', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
+                  Text('Ask about this document', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
                   const SizedBox(height: 8),
                   ..._listOf(data['suggested_questions']).take(3).map((q) => _questionTile(doc, q.toString())),
                 ]
@@ -225,11 +225,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
             ]))
         ] else if (!busy && error == null) ...[
           const SizedBox(height: 16),
-          const Text('Your analysis will appear here after you run the document through the AI model.',
+          Text('Your analysis will appear here after you run the document through the AI model.',
             style: TextStyle(color: muted, fontSize: 13, height: 1.5))
         ],
         const SizedBox(height: 14),
-        const Text('AI-generated analysis can miss context or misinterpret clauses. Verify important facts and seek professional advice for legal, financial or medical decisions.',
+        Text('AI-generated analysis can miss context or misinterpret clauses. Verify important facts and seek professional advice for legal, financial or medical decisions.',
           style: TextStyle(color: muted, fontSize: 12, height: 1.5))
       ]
     ]));
@@ -276,10 +276,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
           Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     color: navy, fontSize: 14, fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
-            const Text(
+            Text(
                 'Based on the risks found in the text. It is a reading aid, not a verdict.',
                 style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
           ])),
@@ -297,21 +297,21 @@ class _AnalysisPageState extends State<AnalysisPage> {
               decoration: BoxDecoration(
                   color: pale, borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                const Icon(Icons.chat_bubble_outline_rounded,
+                Icon(Icons.chat_bubble_outline_rounded,
                     color: blue, size: 17),
                 const SizedBox(width: 10),
                 Expanded(
                     child: Text(question,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: navy, fontSize: 13, height: 1.4))),
-                const Icon(Icons.arrow_forward_rounded, color: muted, size: 16),
+                Icon(Icons.arrow_forward_rounded, color: muted, size: 16),
               ]))));
 
   Widget _datesView(Map<String, dynamic> data) {
     final dates = _listOf(data['important_dates']);
     final amounts = _listOf(data['amounts']);
     if (dates.isEmpty && amounts.isEmpty) {
-      return const Text('No dates or amounts were found in the text.',
+      return Text('No dates or amounts were found in the text.',
           style: TextStyle(color: muted, fontSize: 13, height: 1.5));
     }
     String str(dynamic v) => v == null ? '' : v.toString().trim();
@@ -328,17 +328,17 @@ class _AnalysisPageState extends State<AnalysisPage> {
               Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: navy, fontSize: 13, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text(value,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: blue, fontSize: 13, fontWeight: FontWeight.w700)),
                 if (note.isNotEmpty)
                   Padding(
                       padding: const EdgeInsets.only(top: 3),
                       child: Text(note,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: muted, fontSize: 12, height: 1.4))),
               ])),
             ]));
@@ -378,7 +378,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
               Text(value,
                   style: TextStyle(
                       color: color, fontSize: 18, fontWeight: FontWeight.w800)),
-              Text(label, style: const TextStyle(color: muted, fontSize: 12)),
+              Text(label, style: TextStyle(color: muted, fontSize: 12)),
             ])));
     return Row(children: [
       chip('${_listOf(data['key_details']).length}', 'Details', blue),
@@ -415,21 +415,21 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
   Widget _stringList(dynamic values, {required String empty}) {
     final items = values is List ? values : const [];
-    if (items.isEmpty) return Text(empty, style: const TextStyle(color: muted, fontSize: 13));
+    if (items.isEmpty) return Text(empty, style: TextStyle(color: muted, fontSize: 13));
     return Column(children: items.map((v) => Container(
       width: double.infinity, margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Icon(Icons.check_circle_outline_rounded, color: blue, size: 16),
+        Icon(Icons.check_circle_outline_rounded, color: blue, size: 16),
         const SizedBox(width: 8), Expanded(child: Text(v.toString(),
-          style: const TextStyle(color: navy, fontSize: 13, height: 1.5)))
+          style: TextStyle(color: navy, fontSize: 13, height: 1.5)))
       ])
     )).toList());
   }
 
   Widget _riskList(dynamic values) {
     final items = values is List ? values : const [];
-    if (items.isEmpty) return const Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
+    if (items.isEmpty) return Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
       style: TextStyle(color: muted, fontSize: 13, height: 1.5));
     return Column(children: items.map((v) {
       final item = v is Map ? v : <String, dynamic>{'title': v.toString()};

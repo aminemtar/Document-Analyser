@@ -53,7 +53,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: TextButton(
                     onPressed: last ? null : widget.onDone,
                     child: Text(last ? '' : 'Skip',
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: muted, fontWeight: FontWeight.w700)))),
             Expanded(
               child: PageView.builder(
@@ -85,7 +85,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         const SizedBox(height: 40),
                         Text(slide.title,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: navy,
                                 fontSize: 26,
                                 fontWeight: FontWeight.w800,
@@ -93,7 +93,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         const SizedBox(height: 14),
                         Text(slide.body,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 color: AppColors.bodyText,
                                 fontSize: 15,
                                 height: 1.55)),
