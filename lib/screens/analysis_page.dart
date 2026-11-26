@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
+import '../services/usage_service.dart';
+import 'paywall_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -75,6 +77,13 @@ class _AnalysisPageState extends State<AnalysisPage> {
       setState(() => error = 'This item has no local file attached. Please upload the original document again.');
       return;
     }
+    if (!await UsageService.canAnalyze()) {
+      if (!mounted) return;
+      await Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const PaywallPage()));
+      return;
+    }
+    if (!mounted) return;
     setState(() { busy = true; error = null; result = null; });
     try {
       final text = await DocumentTextExtractor.extract(doc.path!, doc.type);
@@ -86,6 +95,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       final encoded = jsonEncode(analysis);
       final updated = doc.copyWith(status: 'Analyzed', analysisJson: encoded);
       widget.onUpdate(updated);
+      await UsageService.recordAnalysis();
       if (mounted) setState(() => result = analysis);
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));

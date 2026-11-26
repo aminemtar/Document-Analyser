@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/doc_item.dart';
+import 'services/reminder_service.dart';
 import 'screens/analysis_page.dart';
 import 'screens/assistant_page.dart';
 import 'screens/compare_page.dart';
@@ -54,6 +55,7 @@ class _AppShellState extends State<AppShell> {
   bool analysisAutoRun = false;
   bool loading = true;
   bool showOnboarding = false;
+  bool remindersEnabled = false;
   String? pendingQuestion;
   final List<DocItem> documents = [];
 
@@ -82,7 +84,47 @@ class _AppShellState extends State<AppShell> {
       } catch (_) {}
     }
     showOnboarding = !(prefs.getBool('onboarded') ?? false);
+    remindersEnabled = prefs.getBool(ReminderService.prefsKey) ?? false;
     if (mounted) setState(() => loading = false);
+    _syncReminders();
+  }
+
+  /// Rebuilds the scheduled reminders from the saved analyses. Failures are
+  /// ignored on purpose: reminders are a convenience and must never break
+  /// saving or opening a document.
+  Future<void> _syncReminders() async {
+    if (!remindersEnabled) return;
+    try {
+      await ReminderService.sync(documents);
+    } catch (_) {}
+  }
+
+  Future<void> _setReminders(bool enabled) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (enabled) {
+      bool granted = false;
+      try {
+        granted = await ReminderService.requestPermission();
+      } catch (_) {}
+      if (!granted) {
+        messenger.showSnackBar(const SnackBar(
+            content: Text(
+                'Notifications are blocked. Allow them for DocuMind in your phone settings to get reminders.'),
+            behavior: SnackBarBehavior.floating));
+        return;
+      }
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(ReminderService.prefsKey, enabled);
+    if (!mounted) return;
+    setState(() => remindersEnabled = enabled);
+    try {
+      if (enabled) {
+        await ReminderService.sync(documents);
+      } else {
+        await ReminderService.cancelAll();
+      }
+    } catch (_) {}
   }
 
   Future<void> _finishOnboarding() async {
@@ -95,6 +137,7 @@ class _AppShellState extends State<AppShell> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         'documents', jsonEncode(documents.map((e) => e.toJson()).toList()));
+    _syncReminders();
   }
 
   Future<void> _pickDocument() async {
@@ -239,7 +282,9 @@ class _AppShellState extends State<AppShell> {
           }),
       Pages.insights: InsightsPage(docs: documents),
       Pages.compare: ComparePage(docs: documents),
-      Pages.profile: const ProfilePage(),
+      Pages.profile: ProfilePage(
+          remindersEnabled: remindersEnabled,
+          onRemindersChanged: _setReminders),
     };
     final isSubPage = Pages.isSubPage(selected);
     return PopScope(

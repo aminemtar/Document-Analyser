@@ -27,6 +27,26 @@ void main() {
     expect(find.text('More'), findsNothing);
   });
 
+  testWidgets('profile shows the free plan and the reminders switch',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Free plan'), findsOneWidget);
+    expect(find.text('3 of 3 analyses left this month'), findsOneWidget);
+    expect(find.text('Date reminders'), findsOneWidget);
+
+    await tester.tap(find.text('Upgrade'));
+    await tester.pumpAndSettle();
+    expect(find.text('DocuMind Pro'), findsOneWidget);
+    expect(find.textContaining('Preview: purchases are not connected'),
+        findsOneWidget);
+  });
+
   testWidgets('first launch shows onboarding once, Skip opens the app',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
