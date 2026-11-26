@@ -5,9 +5,19 @@ import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:xml/xml.dart';
 
 class DocumentTextExtractor {
+  /// Extracted text by stored file path. Imported files get a unique name
+  /// and are never edited, so a path always means the same content. This
+  /// keeps the assistant from re-reading every file on every question.
+  static final Map<String, String> _cache = {};
+
+  /// Drops a cached text, e.g. after the file was deleted for good.
+  static void forget(String path) => _cache.remove(path);
+
   static Future<String> extract(String path, String type) async {
     final file = File(path);
     if (!await file.exists()) throw Exception('The original file is no longer available on this device. Please upload it again.');
+    final cached = _cache[path];
+    if (cached != null) return cached;
     final bytes = await file.readAsBytes();
     final ext = type.toUpperCase();
     String text;
@@ -37,6 +47,7 @@ class DocumentTextExtractor {
     text = text.replaceAll(RegExp(r'[ \t]+'), ' ').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
     if (text.isEmpty) throw Exception('No readable text was extracted from this file.');
     if (text.length > 65000) text = '${text.substring(0, 65000)}\n[Document truncated for analysis due to context limits.]';
+    _cache[path] = text;
     return text;
   }
 }

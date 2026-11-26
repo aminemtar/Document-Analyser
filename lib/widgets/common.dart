@@ -120,7 +120,9 @@ class ActionTile extends StatelessWidget {
 class DocumentTile extends StatelessWidget {
   final DocItem doc;
   final VoidCallback? onTap;
-  const DocumentTile({super.key, required this.doc, this.onTap});
+  final VoidCallback? onLongPress;
+  const DocumentTile(
+      {super.key, required this.doc, this.onTap, this.onLongPress});
   @override
   Widget build(BuildContext context) {
     final color =
@@ -129,6 +131,7 @@ class DocumentTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 9),
         child: ListTile(
           onTap: onTap,
+          onLongPress: onLongPress,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
           leading: Container(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/doc_item.dart';
+import 'services/document_text_extractor.dart';
 import 'services/reminder_service.dart';
 import 'screens/analysis_page.dart';
 import 'screens/assistant_page.dart';
@@ -62,7 +63,28 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    ReminderService.tapped.addListener(_onReminderTapped);
     _loadDocuments();
+  }
+
+  @override
+  void dispose() {
+    ReminderService.tapped.removeListener(_onReminderTapped);
+    super.dispose();
+  }
+
+  /// Opens the document a tapped reminder is about.
+  void _openByPath(String? path) {
+    if (path == null || !mounted) return;
+    final index = documents.indexWhere((d) => d.path == path);
+    if (index >= 0) _openAnalysis(documents[index]);
+  }
+
+  void _onReminderTapped() {
+    final path = ReminderService.tapped.value;
+    if (path == null) return;
+    ReminderService.tapped.value = null;
+    _openByPath(path);
   }
 
   Future<void> _loadDocuments() async {
@@ -86,7 +108,20 @@ class _AppShellState extends State<AppShell> {
     showOnboarding = !(prefs.getBool('onboarded') ?? false);
     remindersEnabled = prefs.getBool(ReminderService.prefsKey) ?? false;
     if (mounted) setState(() => loading = false);
-    _syncReminders();
+    await _syncReminders();
+    if (remindersEnabled) {
+      // The app may have been opened by tapping a reminder while closed.
+      try {
+        _openByPath(await ReminderService.takeLaunchPayload());
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _renameDocument(DocItem doc, String newName) async {
+    final index = documents.indexOf(doc);
+    if (index < 0) return;
+    setState(() => documents[index] = doc.copyWith(name: newName));
+    await _saveDocuments();
   }
 
   /// Rebuilds the scheduled reminders from the saved analyses. Failures are
@@ -220,6 +255,7 @@ class _AppShellState extends State<AppShell> {
     if (reason == SnackBarClosedReason.action) return;
     final path = doc.path;
     if (path == null) return;
+    DocumentTextExtractor.forget(path);
     try {
       await File(path).delete();
     } catch (_) {
@@ -254,7 +290,8 @@ class _AppShellState extends State<AppShell> {
           docs: documents,
           onUpload: _pickDocument,
           onOpen: _openAnalysis,
-          onDelete: _deleteDocument),
+          onDelete: _deleteDocument,
+          onRename: _renameDocument),
       Pages.analyze: AnalysisPage(
           docs: documents,
           selectedPath: analysisDocumentPath,
@@ -266,8 +303,9 @@ class _AppShellState extends State<AppShell> {
               }),
           onSelectPath: (path) => setState(() => analysisDocumentPath = path),
           onUpdate: (updated) async {
-            final index = documents.indexWhere(
-                (d) => d.name == updated.name && d.path == updated.path);
+            // Match on the stored path: the name can change (rename) while
+            // an analysis is still running.
+            final index = documents.indexWhere((d) => d.path == updated.path);
             if (index >= 0) {
               documents[index] = updated;
               await _saveDocuments();
@@ -316,12 +354,19 @@ class _AppShellState extends State<AppShell> {
                 child: const Icon(Icons.auto_awesome_rounded,
                     color: Colors.white, size: 20)),
             const SizedBox(width: 10),
-            const Text('DocuMind',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-            const SizedBox(width: 5),
-            const Text('AI',
-                style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
+            // One flexible text, so a small screen or a large text setting
+            // shortens the title instead of overflowing the app bar.
+            const Flexible(
+                child: Text.rich(
+                    TextSpan(
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                        children: [
+                          TextSpan(text: 'DocuMind '),
+                          TextSpan(text: 'AI', style: TextStyle(color: blue)),
+                        ]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
           ]),
         ),
         body: loading

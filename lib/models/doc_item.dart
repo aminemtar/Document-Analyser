@@ -11,9 +11,9 @@ class DocItem {
   const DocItem(this.name, this.type, this.size, this.date, this.status,
       {this.path, this.analysisJson});
 
-  DocItem copyWith({String? status, String? analysisJson}) => DocItem(
-      name, type, size, date, status ?? this.status,
-      path: path, analysisJson: analysisJson ?? this.analysisJson);
+  DocItem copyWith({String? name, String? status, String? analysisJson}) =>
+      DocItem(name ?? this.name, type, size, date, status ?? this.status,
+          path: path, analysisJson: analysisJson ?? this.analysisJson);
 
   Map<String, dynamic> toJson() => {
         'name': name, 'type': type, 'size': size, 'date': date,

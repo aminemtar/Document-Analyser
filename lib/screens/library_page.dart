@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/rename_dialog.dart';
 
 class LibraryPage extends StatefulWidget {
   final List<DocItem> docs;
   final VoidCallback onUpload;
   final ValueChanged<DocItem> onOpen;
   final ValueChanged<DocItem> onDelete;
+  final void Function(DocItem doc, String newName) onRename;
   const LibraryPage(
       {super.key,
       required this.docs,
       required this.onUpload,
       required this.onOpen,
-      required this.onDelete});
+      required this.onDelete,
+      required this.onRename});
   @override
   State<LibraryPage> createState() => _LibraryPageState();
 }
@@ -21,6 +24,12 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState extends State<LibraryPage> {
   String query = '';
   String filter = 'All';
+
+  Future<void> _rename(DocItem doc) async {
+    final name = await showRenameDialog(context, doc.name);
+    if (name != null && name != doc.name) widget.onRename(doc, name);
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = widget.docs
@@ -69,7 +78,7 @@ class _LibraryPageState extends State<LibraryPage> {
       if (items.isNotEmpty)
         const Padding(
             padding: EdgeInsets.only(bottom: 10),
-            child: Text('Tap to analyze · swipe to delete',
+            child: Text('Tap to analyze · hold to rename · swipe to delete',
                 style: TextStyle(color: muted, fontSize: 13))),
       ...items.map((d) => Dismissible(
             key: ObjectKey(d),
@@ -84,7 +93,10 @@ class _LibraryPageState extends State<LibraryPage> {
                     borderRadius: BorderRadius.circular(AppRadius.lg)),
                 child: const Icon(Icons.delete_outline_rounded,
                     color: Colors.white)),
-            child: DocumentTile(doc: d, onTap: () => widget.onOpen(d)),
+            child: DocumentTile(
+                doc: d,
+                onTap: () => widget.onOpen(d),
+                onLongPress: () => _rename(d)),
           )),
     ]));
   }

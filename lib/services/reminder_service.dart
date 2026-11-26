@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/attention.dart';
@@ -21,7 +22,10 @@ List<DateTime> reminderMoments(DateTime day, DateTime now) {
 class _Planned {
   final DateTime at;
   final String title, body;
-  const _Planned(this.at, this.title, this.body);
+
+  /// Stored path of the document, handed back when the notification is tapped.
+  final String? payload;
+  const _Planned(this.at, this.title, this.body, this.payload);
 }
 
 /// Schedules on-device reminders for dates found in analyzed documents.
@@ -33,9 +37,26 @@ abstract final class ReminderService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _ready = false;
 
+  /// Set to a document's stored path when its reminder is tapped while the
+  /// app is running. The listener resets it to null once handled.
+  static final ValueNotifier<String?> tapped = ValueNotifier<String?>(null);
+
+  /// The document path of the reminder that launched the app from a closed
+  /// state, or null when the app was opened some other way.
+  static Future<String?> takeLaunchPayload() async {
+    await _init();
+    final details = await _plugin.getNotificationAppLaunchDetails();
+    if (details == null || !details.didNotificationLaunchApp) return null;
+    return details.notificationResponse?.payload;
+  }
+
   static Future<void> _init() async {
     if (_ready) return;
     await _plugin.initialize(
+      onDidReceiveNotificationResponse: (response) {
+        final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) tapped.value = payload;
+      },
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
         // Permission is requested later, when the user turns reminders on.
@@ -86,7 +107,10 @@ abstract final class ReminderService {
       for (final at in reminderMoments(event.when!, clock)) {
         final sameDay = at.day == event.when!.day;
         planned.add(_Planned(
-            at, '${sameDay ? 'Today' : 'Tomorrow'}: ${event.title}', event.doc.name));
+            at,
+            '${sameDay ? 'Today' : 'Tomorrow'}: ${event.title}',
+            event.doc.name,
+            event.doc.path));
       }
     }
     planned.sort((a, b) => a.at.compareTo(b.at));
@@ -112,6 +136,7 @@ abstract final class ReminderService {
         scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
             tz.UTC, item.at.millisecondsSinceEpoch),
         notificationDetails: details,
+        payload: item.payload,
         // Inexact: no exact-alarm permission, may fire a few minutes late.
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
