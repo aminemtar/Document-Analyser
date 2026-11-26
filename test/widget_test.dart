@@ -123,6 +123,21 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('Add document offers a file, a camera scan and photos',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add document'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choose a file'), findsOneWidget);
+    expect(find.text('Scan with camera'), findsOneWidget);
+    expect(find.text('Import photos'), findsOneWidget);
+    expect(find.textContaining('Arabic is not supported'), findsOneWidget);
+  });
+
   testWidgets('first launch shows onboarding once, Skip opens the app',
       (tester) async {
     SharedPreferences.setMockInitialValues({});

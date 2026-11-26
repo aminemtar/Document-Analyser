@@ -59,7 +59,7 @@ class _LibraryPageState extends State<LibraryPage> {
       const SizedBox(height: 13),
       Wrap(
           spacing: 8,
-          children: ['All', 'PDF', 'DOCX', 'TXT', 'RTF']
+          children: ['All', 'PDF', 'DOCX', 'TXT', 'RTF', 'SCAN']
               .map((f) => ChoiceChip(
                   label: Text(f),
                   selected: filter == f,

@@ -35,6 +35,9 @@ class DocumentTextExtractor {
         .where((e) => e.name.local == 't').map((e) => e.innerText).join(' ');
     } else if (ext == 'TXT') {
       text = utf8.decode(bytes, allowMalformed: true);
+    } else if (ext == 'SCAN') {
+      text = '[This text was read from photos and may contain recognition errors.]\n'
+          '${utf8.decode(bytes, allowMalformed: true)}';
     } else if (ext == 'RTF') {
       text = utf8.decode(bytes, allowMalformed: true)
         .replaceAll(RegExp(r"\\'[0-9a-fA-F]{2}"), ' ')
