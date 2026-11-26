@@ -3,6 +3,13 @@ import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
+String _greeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
 class HomePage extends StatelessWidget {
   final List<DocItem> docs;
   final VoidCallback onUpload;
@@ -19,7 +26,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) => PageBody(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        heading('Good afternoon 👋', 'Your documents, understood in seconds.'),
+        heading('${_greeting()} 👋', 'Your documents, understood in seconds.'),
         const SizedBox(height: 22),
         Container(
           width: double.infinity,

@@ -12,6 +12,18 @@ void main() {
 
     expect(find.text('DocuMind'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(2));
-    expect(find.text('Add a document'), findsOneWidget);
+    expect(find.text('Add document'), findsOneWidget);
+  });
+
+  testWidgets('bottom bar has four destinations and no More tab',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+
+    for (final label in ['Home', 'Library', 'Assistant', 'Profile']) {
+      expect(find.text(label), findsWidgets);
+    }
+    expect(find.text('More'), findsNothing);
   });
 }

@@ -11,12 +11,17 @@ class AnalysisPage extends StatefulWidget {
   final String? selectedPath;
   final ValueChanged<String?> onSelectPath;
   final ValueChanged<DocItem> onUpdate;
+
+  /// When true, opening the page on a document that has no saved analysis
+  /// starts the analysis straight away (set when a document is tapped).
+  final bool autoRun;
   const AnalysisPage({
     super.key,
     required this.docs,
     required this.selectedPath,
     required this.onSelectPath,
     required this.onUpdate,
+    this.autoRun = false,
   });
   @override
   State<AnalysisPage> createState() => _AnalysisPageState();
@@ -35,6 +40,14 @@ class _AnalysisPageState extends State<AnalysisPage> {
     if (widget.selectedPath != null) {
       final index = widget.docs.indexWhere((d) => d.path == widget.selectedPath);
       if (index >= 0) selectedIndex = index;
+    }
+    if (widget.autoRun && widget.docs.isNotEmpty) {
+      final doc = widget.docs[selectedIndex.clamp(0, widget.docs.length - 1)];
+      if (doc.analysisJson == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !busy) _analyze(doc);
+        });
+      }
     }
   }
 

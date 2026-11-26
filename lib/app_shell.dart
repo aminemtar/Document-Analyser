@@ -14,6 +14,33 @@ import 'screens/library_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
 
+/// Page indexes. The bottom bar only shows four of them; Analyze, Insights
+/// and Compare are reached from Home, the Library or a document and show a
+/// back button.
+abstract final class Pages {
+  static const home = 0;
+  static const library = 1;
+  static const analyze = 2;
+  static const assistant = 3;
+  static const insights = 4;
+  static const compare = 5;
+  static const profile = 6;
+
+  /// Page opened by each bottom-bar destination, in bar order.
+  static const tabs = [home, library, assistant, profile];
+
+  /// Which bottom-bar destination is highlighted for a page.
+  static int tabFor(int page) => switch (page) {
+        Pages.library || Pages.analyze => 1,
+        Pages.assistant => 2,
+        Pages.profile => 3,
+        _ => 0,
+      };
+
+  static bool isSubPage(int page) =>
+      page == analyze || page == insights || page == compare;
+}
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
   @override
@@ -21,8 +48,9 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  int selected = 0;
+  int selected = Pages.home;
   String? analysisDocumentPath;
+  bool analysisAutoRun = false;
   bool loading = true;
   final List<DocItem> documents = [];
 
@@ -77,7 +105,8 @@ class _AppShellState extends State<AppShell> {
       final storageDir = Directory('${appDir.path}/documents');
       if (!await storageDir.exists()) await storageDir.create(recursive: true);
       final safeName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-      final storedPath = '${storageDir.path}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
+      final storedPath =
+          '${storageDir.path}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
       if (file.bytes != null) {
         await File(storedPath).writeAsBytes(file.bytes!, flush: true);
       } else if (file.path != null) {
@@ -86,8 +115,10 @@ class _AppShellState extends State<AppShell> {
         throw Exception('The selected file could not be read by the app.');
       }
       setState(() {
-        documents.insert(0, DocItem(file.name, ext, size, 'Just now', 'Ready', path: storedPath));
-        selected = 1;
+        documents.insert(
+            0, DocItem(file.name, ext, size, 'Just now', 'Ready', path: storedPath));
+        analysisAutoRun = false;
+        selected = Pages.library;
       });
     } catch (e) {
       if (mounted) {
@@ -107,173 +138,163 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  void _openMoreMenu() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-          child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('More tools',
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800, color: navy))),
-          const SizedBox(height: 12),
-          ListTile(
-              leading: const Icon(Icons.insights_rounded, color: blue),
-              title: const Text('Insights'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                setState(() => selected = 4);
-              }),
-          ListTile(
-              leading: const Icon(Icons.compare_arrows_rounded, color: blue),
-              title: const Text('Compare documents'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                setState(() => selected = 5);
-              }),
-          ListTile(
-              leading: const Icon(Icons.person_rounded, color: blue),
-              title: const Text('Profile & settings'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                setState(() => selected = 6);
-              }),
-        ]),
-      )),
-    );
+  /// Removes a document right away and offers Undo. The stored file is only
+  /// deleted from disk once the snackbar closes without Undo being pressed.
+  Future<void> _deleteDocument(DocItem doc) async {
+    final index = documents.indexOf(doc);
+    if (index < 0) return;
+    setState(() {
+      documents.removeAt(index);
+      if (analysisDocumentPath == doc.path) analysisDocumentPath = null;
+    });
+    await _saveDocuments();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    final controller = messenger.showSnackBar(SnackBar(
+      content: Text('${doc.name} deleted'),
+      behavior: SnackBarBehavior.floating,
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          if (!mounted) return;
+          setState(() => documents.insert(index.clamp(0, documents.length), doc));
+          _saveDocuments();
+        },
+      ),
+    ));
+    final reason = await controller.closed;
+    if (reason == SnackBarClosedReason.action) return;
+    final path = doc.path;
+    if (path == null) return;
+    try {
+      await File(path).delete();
+    } catch (_) {
+      // The record is already gone; a leftover file is harmless.
+    }
   }
+
+  void _openAnalysis(DocItem doc) => setState(() {
+        analysisDocumentPath = doc.path;
+        analysisAutoRun = true;
+        selected = Pages.analyze;
+      });
+
+  void _goTo(int page) => setState(() {
+        analysisAutoRun = false;
+        selected = page;
+      });
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      HomePage(
+    final pages = <int, Widget>{
+      Pages.home: HomePage(
           docs: documents,
           onUpload: _pickDocument,
-          onNavigate: (i) => setState(() => selected = i),
-          onOpen: (doc) => setState(() {
-            analysisDocumentPath = doc.path;
-            selected = 2;
-          })),
-      LibraryPage(
+          onNavigate: _goTo,
+          onOpen: _openAnalysis),
+      Pages.library: LibraryPage(
           docs: documents,
           onUpload: _pickDocument,
-          onOpen: (doc) => setState(() {
-            analysisDocumentPath = doc.path;
-            selected = 2;
-          })),
-      AnalysisPage(
-        docs: documents,
-        selectedPath: analysisDocumentPath,
-        onSelectPath: (path) => setState(() => analysisDocumentPath = path),
-        onUpdate: (updated) async {
-        final index = documents.indexWhere((d) => d.name == updated.name && d.path == updated.path);
-        if (index >= 0) { documents[index] = updated; await _saveDocuments(); if (mounted) setState(() {}); }
-      }),
-      AssistantPage(docs: documents),
-      InsightsPage(docs: documents),
-      ComparePage(docs: documents),
-      const ProfilePage(),
-    ];
-    final labels = [
-      'Home',
-      'Library',
-      'Analyze',
-      'AI Assistant',
-      'Insights',
-      'Compare',
-      'Profile'
-    ];
-    final icons = [
-      Icons.grid_view_rounded,
-      Icons.folder_copy_rounded,
-      Icons.document_scanner_rounded,
-      Icons.auto_awesome_rounded,
-      Icons.insights_rounded,
-      Icons.compare_arrows_rounded,
-      Icons.person_rounded
-    ];
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(children: [
-          Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF477BFF), Color(0xFF2147D8)]),
-                  borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.auto_awesome_rounded,
-                  color: Colors.white, size: 20)),
-          const SizedBox(width: 10),
-          const Text('DocuMind',
-              style:
-                  TextStyle(fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-          const SizedBox(width: 5),
-          const Text('AI',
-              style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
-        ]),
-        actions: [
-          IconButton(
-              onPressed: () => setState(() => selected = 3),
-              icon: const Icon(Icons.notifications_none_rounded)),
-          Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: CircleAvatar(
-                  radius: 17,
-                  backgroundColor: const Color(0xFFE2E9FF),
-                  child: const Text('M',
-                      style: TextStyle(
-                          color: blue, fontWeight: FontWeight.bold)))),
-        ],
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(child: pages[selected]),
-      floatingActionButton: selected == 2 || selected == 3 || selected == 6
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _pickDocument,
-              backgroundColor: blue,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add document',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selected > 4 ? 4 : selected,
-        onDestinationSelected: (i) {
-          if (i == 4) {
-            _openMoreMenu();
-          } else {
-            setState(() => selected = i);
-          }
-        },
-        height: 70,
-        backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFFE9EFFF),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.grid_view_rounded), label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.folder_copy_outlined),
-              selectedIcon: Icon(Icons.folder_copy_rounded),
-              label: 'Library'),
-          NavigationDestination(
-              icon: Icon(Icons.document_scanner_outlined),
-              selectedIcon: Icon(Icons.document_scanner_rounded),
-              label: 'Analyze'),
-          NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome_rounded),
-              label: 'Assistant'),
-          NavigationDestination(
-              icon: Icon(Icons.more_horiz_rounded), label: 'More'),
-        ],
+          onOpen: _openAnalysis,
+          onDelete: _deleteDocument),
+      Pages.analyze: AnalysisPage(
+          docs: documents,
+          selectedPath: analysisDocumentPath,
+          autoRun: analysisAutoRun,
+          onSelectPath: (path) => setState(() => analysisDocumentPath = path),
+          onUpdate: (updated) async {
+            final index = documents.indexWhere(
+                (d) => d.name == updated.name && d.path == updated.path);
+            if (index >= 0) {
+              documents[index] = updated;
+              await _saveDocuments();
+              if (mounted) setState(() {});
+            }
+          }),
+      Pages.assistant: AssistantPage(docs: documents),
+      Pages.insights: InsightsPage(docs: documents),
+      Pages.compare: ComparePage(docs: documents),
+      Pages.profile: const ProfilePage(),
+    };
+    final isSubPage = Pages.isSubPage(selected);
+    return PopScope(
+      // Back from a sub-page or another tab returns Home instead of closing.
+      canPop: selected == Pages.home,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _goTo(selected == Pages.analyze ? Pages.library : Pages.home);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: isSubPage
+              ? IconButton(
+                  tooltip: 'Back',
+                  onPressed: () =>
+                      _goTo(selected == Pages.analyze ? Pages.library : Pages.home),
+                  icon: const Icon(Icons.arrow_back_rounded))
+              : null,
+          title: Row(children: [
+            Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                        colors: [Color(0xFF477BFF), Color(0xFF2147D8)]),
+                    borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.white, size: 20)),
+            const SizedBox(width: 10),
+            const Text('DocuMind',
+                style: TextStyle(
+                    fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+            const SizedBox(width: 5),
+            const Text('AI',
+                style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
+          ]),
+        ),
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SafeArea(child: pages[selected]!),
+        floatingActionButton: selected == Pages.analyze ||
+                selected == Pages.assistant ||
+                selected == Pages.profile
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: _pickDocument,
+                backgroundColor: blue,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add document',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: Pages.tabFor(selected),
+          onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
+          height: 70,
+          backgroundColor: Colors.white,
+          indicatorColor: AppColors.surfaceTint,
+          destinations: const [
+            NavigationDestination(
+                icon: Icon(Icons.grid_view_outlined),
+                selectedIcon: Icon(Icons.grid_view_rounded),
+                label: 'Home'),
+            NavigationDestination(
+                icon: Icon(Icons.folder_copy_outlined),
+                selectedIcon: Icon(Icons.folder_copy_rounded),
+                label: 'Library'),
+            NavigationDestination(
+                icon: Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome_rounded),
+                label: 'Assistant'),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profile'),
+          ],
+        ),
       ),
     );
   }

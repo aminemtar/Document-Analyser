@@ -7,11 +7,13 @@ class LibraryPage extends StatefulWidget {
   final List<DocItem> docs;
   final VoidCallback onUpload;
   final ValueChanged<DocItem> onOpen;
+  final ValueChanged<DocItem> onDelete;
   const LibraryPage(
       {super.key,
       required this.docs,
       required this.onUpload,
-      required this.onOpen});
+      required this.onOpen,
+      required this.onDelete});
   @override
   State<LibraryPage> createState() => _LibraryPageState();
 }
@@ -48,7 +50,7 @@ class _LibraryPageState extends State<LibraryPage> {
       const SizedBox(height: 13),
       Wrap(
           spacing: 8,
-          children: ['All', 'PDF', 'DOCX', 'TXT']
+          children: ['All', 'PDF', 'DOCX', 'TXT', 'RTF']
               .map((f) => ChoiceChip(
                   label: Text(f),
                   selected: filter == f,
@@ -64,7 +66,26 @@ class _LibraryPageState extends State<LibraryPage> {
             icon: Icons.folder_open_rounded,
             title: 'No documents found',
             subtitle: 'Try another search or upload a document.'),
-      ...items.map((d) => DocumentTile(doc: d, onTap: () => widget.onOpen(d))),
+      if (items.isNotEmpty)
+        const Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Text('Tap to analyze · swipe to delete',
+                style: TextStyle(color: muted, fontSize: 11))),
+      ...items.map((d) => Dismissible(
+            key: ObjectKey(d),
+            direction: DismissDirection.endToStart,
+            onDismissed: (_) => widget.onDelete(d),
+            background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 22),
+                margin: const EdgeInsets.only(bottom: 9),
+                decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(AppRadius.lg)),
+                child: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.white)),
+            child: DocumentTile(doc: d, onTap: () => widget.onOpen(d)),
+          )),
     ]));
   }
 }
