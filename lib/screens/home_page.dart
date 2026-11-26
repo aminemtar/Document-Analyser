@@ -126,34 +126,38 @@ class HomePage extends StatelessWidget {
           ...docs.take(3).map((d) =>
               DocumentTile(doc: d, onTap: () => onOpen(d))),
         sectionTitle('Explore your workspace'),
-        GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 11,
-            crossAxisSpacing: 11,
-            childAspectRatio: 1.55,
-            children: [
-              ActionTile(
-                  icon: Icons.auto_awesome,
-                  title: 'Ask your documents',
-                  subtitle: 'Get instant answers',
-                  onTap: () => onNavigate(3)),
-              ActionTile(
-                  icon: Icons.compare_arrows_rounded,
-                  title: 'Compare files',
-                  subtitle: 'Find what changed',
-                  onTap: () => onNavigate(5)),
-              ActionTile(
-                  icon: Icons.insights_rounded,
-                  title: 'Insights',
-                  subtitle: 'See key patterns',
-                  onTap: () => onNavigate(4)),
-              ActionTile(
-                  icon: Icons.shield_outlined,
-                  title: 'Risk review',
-                  subtitle: 'Spot important clauses',
-                  onTap: () => onNavigate(2)),
-            ]),
+        // Rows sized by their content (not a fixed aspect ratio), so tiles
+        // grow with long subtitles, small screens and large text settings.
+        _tileRow(
+            ActionTile(
+                icon: Icons.auto_awesome,
+                title: 'Ask your documents',
+                subtitle: 'Get instant answers',
+                onTap: () => onNavigate(3)),
+            ActionTile(
+                icon: Icons.compare_arrows_rounded,
+                title: 'Compare files',
+                subtitle: 'Find what changed',
+                onTap: () => onNavigate(5))),
+        const SizedBox(height: 11),
+        _tileRow(
+            ActionTile(
+                icon: Icons.insights_rounded,
+                title: 'Insights',
+                subtitle: 'See key patterns',
+                onTap: () => onNavigate(4)),
+            ActionTile(
+                icon: Icons.shield_outlined,
+                title: 'Risk review',
+                subtitle: 'Spot important clauses',
+                onTap: () => onNavigate(2))),
+      ]));
+
+  /// Two tiles side by side, both as tall as the taller one.
+  Widget _tileRow(Widget left, Widget right) => IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: left),
+        const SizedBox(width: 11),
+        Expanded(child: right),
       ]));
 }
