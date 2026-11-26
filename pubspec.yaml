@@ -22,6 +22,9 @@ dependencies:
   flutter_local_notifications: ^22.0.1
   # Only used for TZDateTime (reminders are scheduled as UTC instants).
   timezone: ">=0.9.0 <1.0.0"
+  # Scanning: take or pick photos, then read their text on the device.
+  image_picker: ^1.1.2
+  google_mlkit_text_recognition: ^0.15.0
 
 dev_dependencies:
   flutter_test:

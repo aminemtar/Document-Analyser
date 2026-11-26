@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/doc_item.dart';
 import 'services/document_text_extractor.dart';
 import 'services/reminder_service.dart';
+import 'services/scan_service.dart';
 import 'screens/analysis_page.dart';
 import 'screens/assistant_page.dart';
 import 'screens/compare_page.dart';
@@ -16,6 +19,7 @@ import 'screens/library_page.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
+import 'widgets/scan_flow.dart';
 
 /// Page indexes. The bottom bar only shows four of them; Analyze, Insights
 /// and Compare are reached from Home, the Library or a document and show a
@@ -226,6 +230,95 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  /// The one entry point for adding a document: a file, a camera scan, or
+  /// photos from the gallery.
+  Future<void> _showAddSheet() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.upload_file_rounded, color: blue),
+            title: const Text('Choose a file'),
+            subtitle: const Text('PDF, Word, text or RTF'),
+            onTap: () => Navigator.of(sheetContext).pop('file'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined, color: blue),
+            title: const Text('Scan with camera'),
+            subtitle: const Text('Photograph the pages of a paper document'),
+            onTap: () => Navigator.of(sheetContext).pop('camera'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined, color: blue),
+            title: const Text('Import photos'),
+            subtitle: const Text('Read the text in pictures you already have'),
+            onTap: () => Navigator.of(sheetContext).pop('photos'),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+            child: Text(
+                'Scanning reads English, French and other Latin-script text on your device. Arabic is not supported yet.',
+                style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
+          ),
+        ]),
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case 'file':
+        await _pickDocument();
+      case 'camera':
+        await _scanDocument(ImageSource.camera);
+      case 'photos':
+        await _scanDocument(ImageSource.gallery);
+    }
+  }
+
+  /// Reads the text of photographed or imported pages and stores it as one
+  /// document of type SCAN (plain text), analyzed like any other file.
+  Future<void> _scanDocument(ImageSource source) async {
+    final messenger = ScaffoldMessenger.of(context);
+    void say(String message) => messenger.showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+    try {
+      final pages = await scanPages(context, source);
+      if (!mounted || pages.isEmpty) return;
+      final text = joinScanPages(pages);
+      if (text.length < minScanTextLength) {
+        say('No readable text found. Use good light, hold the phone steady and fill the frame with the page.');
+        return;
+      }
+      final now = DateTime.now();
+      final appDir = await getApplicationDocumentsDirectory();
+      final storageDir = Directory('${appDir.path}/documents');
+      if (!await storageDir.exists()) await storageDir.create(recursive: true);
+      final storedPath =
+          '${storageDir.path}/${now.microsecondsSinceEpoch}_scan.txt';
+      await File(storedPath).writeAsString(text, flush: true);
+      final pageCount = pages.where((p) => p.trim().isNotEmpty).length;
+      if (!mounted) return;
+      setState(() {
+        documents.insert(
+            0,
+            DocItem(scanName(now), 'SCAN',
+                pageCount == 1 ? '1 page' : '$pageCount pages', 'Just now', 'Ready',
+                path: storedPath));
+        analysisAutoRun = false;
+        selected = Pages.library;
+      });
+      await _saveDocuments();
+      say('Scan added to your library');
+    } on PlatformException catch (e) {
+      say(e.code.contains('access_denied')
+          ? 'Camera or photo access is blocked. Allow it for DocuMind in your phone settings.'
+          : 'Could not scan: ${e.message ?? e.code}');
+    } catch (e) {
+      say('Could not scan: $e');
+    }
+  }
+
   /// Removes a document right away and offers Undo. The stored file is only
   /// deleted from disk once the snackbar closes without Undo being pressed.
   Future<void> _deleteDocument(DocItem doc) async {
@@ -283,12 +376,12 @@ class _AppShellState extends State<AppShell> {
     final pages = <int, Widget>{
       Pages.home: HomePage(
           docs: documents,
-          onUpload: _pickDocument,
+          onUpload: _showAddSheet,
           onNavigate: _goTo,
           onOpen: _openAnalysis),
       Pages.library: LibraryPage(
           docs: documents,
-          onUpload: _pickDocument,
+          onUpload: _showAddSheet,
           onOpen: _openAnalysis,
           onDelete: _deleteDocument,
           onRename: _renameDocument),
@@ -377,7 +470,7 @@ class _AppShellState extends State<AppShell> {
                 selected == Pages.profile
             ? null
             : FloatingActionButton.extended(
-                onPressed: _pickDocument,
+                onPressed: _showAddSheet,
                 backgroundColor: blue,
                 foregroundColor: Colors.white,
                 icon: const Icon(Icons.add_rounded),
