@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
+import '../widgets/attention_card.dart';
 import '../widgets/common.dart';
 
 String _greeting() {
@@ -112,6 +113,7 @@ class HomePage extends StatelessWidget {
                   tint: const Color(0xFFEAF0FF),
                   color: blue)),
         ]),
+        AttentionCard(docs: docs, onOpen: onOpen),
         sectionTitle('Recent documents',
             action: 'View all', onTap: () => onNavigate(1)),
         if (docs.isEmpty)

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
@@ -7,7 +9,15 @@ import '../widgets/common.dart';
 
 class AssistantPage extends StatefulWidget {
   final List<DocItem> docs;
-  const AssistantPage({super.key, required this.docs});
+
+  /// A question handed over from another screen; it is sent once on open.
+  final String? pendingQuestion;
+  final VoidCallback? onPendingConsumed;
+  const AssistantPage(
+      {super.key,
+      required this.docs,
+      this.pendingQuestion,
+      this.onPendingConsumed});
   @override
   State<AssistantPage> createState() => _AssistantPageState();
 }
@@ -21,6 +31,60 @@ class _AssistantPageState extends State<AssistantPage> {
   bool busy = false;
   String? error;
 
+  static const _historyKey = 'assistant_messages';
+  static const _welcome =
+      'Ask a question about your uploaded files. I’ll use their extracted text and name the source when possible.';
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  /// The page is rebuilt whenever the user switches tabs, so the conversation
+  /// is kept on the device and restored here.
+  Future<void> _restore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_historyKey);
+    if (saved != null) {
+      try {
+        final restored = (jsonDecode(saved) as List)
+            .map((e) => Map<String, String>.from(e as Map))
+            .toList();
+        if (restored.isNotEmpty) {
+          messages
+            ..clear()
+            ..addAll(restored);
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {});
+    final pending = widget.pendingQuestion;
+    if (pending != null) {
+      widget.onPendingConsumed?.call();
+      controller.text = pending;
+      send();
+    }
+  }
+
+  Future<void> _saveHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keep =
+        messages.length > 60 ? messages.sublist(messages.length - 60) : messages;
+    await prefs.setString(_historyKey, jsonEncode(keep));
+  }
+
+  Future<void> _clearChat() async {
+    setState(() {
+      messages
+        ..clear()
+        ..add({'role': 'ai', 'text': _welcome});
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_historyKey);
+  }
+
   Future<void> send() async {
     final question = controller.text.trim();
     if (question.isEmpty || busy) return;
@@ -30,6 +94,7 @@ class _AssistantPageState extends State<AssistantPage> {
         messages.add({'role': 'ai', 'text': 'Upload a PDF, DOCX, TXT or RTF file first. I need real document content to answer questions.'});
         controller.clear();
       });
+      _saveHistory();
       return;
     }
     setState(() {
@@ -59,14 +124,15 @@ class _AssistantPageState extends State<AssistantPage> {
         question: question,
         documents: available,
       );
-      if (mounted) setState(() => messages.add({'role': 'ai', 'text': answer}));
+      // Add the answer even if the user left the tab meanwhile, so it is saved.
+      messages.add({'role': 'ai', 'text': answer});
     } catch (e) {
-      if (mounted) setState(() {
-        error = e.toString().replaceFirst('Exception: ', '');
-        messages.add({'role': 'ai', 'text': 'I couldn’t complete that request. ${error!}'});
-      });
+      error = e.toString().replaceFirst('Exception: ', '');
+      messages.add({'role': 'ai', 'text': 'I couldn’t complete that request. ${error!}'});
     } finally {
-      if (mounted) setState(() => busy = false);
+      busy = false;
+      if (mounted) setState(() {});
+      _saveHistory();
     }
   }
 
@@ -82,7 +148,11 @@ class _AssistantPageState extends State<AssistantPage> {
     Padding(
       padding: const EdgeInsets.fromLTRB(20, 15, 20, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        heading('AI assistant', 'Ask questions across your uploaded documents.'),
+        heading('AI assistant', 'Ask questions across your uploaded documents.',
+            trailing: IconButton(
+                tooltip: 'Clear conversation',
+                onPressed: busy ? null : _clearChat,
+                icon: const Icon(Icons.delete_sweep_outlined, color: muted))),
         const SizedBox(height: 10),
         Row(children: [
           const Icon(Icons.folder_copy_outlined, color: blue, size: 16),

@@ -62,7 +62,7 @@ class OpenRouterDocumentAI {
     required String text,
   }) async {
     final content = await _complete(
-      system: 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.',
+      system: 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string), review_level (integer 0-100 showing how much attention the document needs, based only on the risks you found), important_dates (array of objects with label, date, note; date is YYYY-MM-DD only when an exact date is written in the text, otherwise null), amounts (array of objects with label and value, value exactly as written in the text), suggested_questions (array of 3 short questions a reader could ask about this document). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.',
       user: 'Analyze this real uploaded document. Filename: $fileName. Format: $fileType.\n\nDOCUMENT TEXT:\n$text',
     );
     return _decodeJson(content);

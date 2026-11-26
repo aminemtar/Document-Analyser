@@ -6,7 +6,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('DocuMind opens without sample documents', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded': true});
     await tester.pumpWidget(const DocuMindApp());
     await tester.pumpAndSettle();
 
@@ -17,7 +17,7 @@ void main() {
 
   testWidgets('bottom bar has four destinations and no More tab',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'onboarded': true});
     await tester.pumpWidget(const DocuMindApp());
     await tester.pumpAndSettle();
 
@@ -25,5 +25,19 @@ void main() {
       expect(find.text(label), findsWidgets);
     }
     expect(find.text('More'), findsNothing);
+  });
+
+  testWidgets('first launch shows onboarding once, Skip opens the app',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Understand any document'), findsOneWidget);
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Understand any document'), findsNothing);
+    expect(find.text('Add document'), findsOneWidget);
   });
 }

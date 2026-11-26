@@ -11,6 +11,7 @@ import 'screens/compare_page.dart';
 import 'screens/home_page.dart';
 import 'screens/insights_page.dart';
 import 'screens/library_page.dart';
+import 'screens/onboarding_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
 
@@ -52,6 +53,8 @@ class _AppShellState extends State<AppShell> {
   String? analysisDocumentPath;
   bool analysisAutoRun = false;
   bool loading = true;
+  bool showOnboarding = false;
+  String? pendingQuestion;
   final List<DocItem> documents = [];
 
   @override
@@ -78,7 +81,14 @@ class _AppShellState extends State<AppShell> {
           ..addAll(parsed);
       } catch (_) {}
     }
+    showOnboarding = !(prefs.getBool('onboarded') ?? false);
     if (mounted) setState(() => loading = false);
+  }
+
+  Future<void> _finishOnboarding() async {
+    setState(() => showOnboarding = false);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarded', true);
   }
 
   Future<void> _saveDocuments() async {
@@ -187,6 +197,10 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (showOnboarding) return OnboardingPage(onDone: _finishOnboarding);
     final pages = <int, Widget>{
       Pages.home: HomePage(
           docs: documents,
@@ -202,6 +216,11 @@ class _AppShellState extends State<AppShell> {
           docs: documents,
           selectedPath: analysisDocumentPath,
           autoRun: analysisAutoRun,
+          onAsk: (question) => setState(() {
+                pendingQuestion = question;
+                analysisAutoRun = false;
+                selected = Pages.assistant;
+              }),
           onSelectPath: (path) => setState(() => analysisDocumentPath = path),
           onUpdate: (updated) async {
             final index = documents.indexWhere(
@@ -212,7 +231,12 @@ class _AppShellState extends State<AppShell> {
               if (mounted) setState(() {});
             }
           }),
-      Pages.assistant: AssistantPage(docs: documents),
+      Pages.assistant: AssistantPage(
+          docs: documents,
+          pendingQuestion: pendingQuestion,
+          onPendingConsumed: () {
+            if (mounted) setState(() => pendingQuestion = null);
+          }),
       Pages.insights: InsightsPage(docs: documents),
       Pages.compare: ComparePage(docs: documents),
       Pages.profile: const ProfilePage(),
