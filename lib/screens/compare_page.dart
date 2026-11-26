@@ -81,12 +81,12 @@ class _ComparePageState extends State<ComparePage> {
         )),
         if (a == b)
           const Padding(padding: EdgeInsets.only(top: 9), child: Text('Choose two different files.',
-            style: TextStyle(color: muted, fontSize: 11))),
+            style: TextStyle(color: muted, fontSize: 13))),
         if (error != null) ...[
           const SizedBox(height: 14),
           Container(width: double.infinity, padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(13)),
-            child: Text(error!, style: const TextStyle(color: Color(0xFF9C3540), fontSize: 11, height: 1.5))),
+            child: Text(error!, style: const TextStyle(color: Color(0xFF9C3540), fontSize: 13, height: 1.5))),
         ],
         if (comparison != null) ...[
           const SizedBox(height: 20),
@@ -97,7 +97,7 @@ class _ComparePageState extends State<ComparePage> {
           _resultList('Points to review', comparison!['review_points']),
           const SizedBox(height: 10),
           const Text('AI comparison is based on extracted text only. Check the original files before relying on any finding.',
-            style: TextStyle(color: muted, fontSize: 10, height: 1.5)),
+            style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
         ],
       ],
     ]),
@@ -108,7 +108,7 @@ class _ComparePageState extends State<ComparePage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w700)),
+        Text(label, style: const TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.w700)),
         const SizedBox(height: 7),
         DropdownButton<int>(
           value: value.clamp(0, widget.docs.length - 1).toInt(),
@@ -116,7 +116,7 @@ class _ComparePageState extends State<ComparePage> {
           underline: const SizedBox(),
           items: List.generate(widget.docs.length, (i) => DropdownMenuItem(
             value: i,
-            child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+            child: Text(widget.docs[i].name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
           )),
           onChanged: busy ? null : (v) { if (v != null) onChanged(v); },
         ),
@@ -131,7 +131,7 @@ class _ComparePageState extends State<ComparePage> {
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title, style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
       const SizedBox(height: 7),
-      Text((value ?? 'No summary returned.').toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 11, height: 1.55)),
+      Text((value ?? 'No summary returned.').toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 13, height: 1.55)),
     ]),
   );
 
@@ -151,7 +151,7 @@ class _ComparePageState extends State<ComparePage> {
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Icon(Icons.circle, color: blue, size: 7),
             const SizedBox(width: 8),
-            Expanded(child: Text(item.toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 11, height: 1.5))),
+            Expanded(child: Text(item.toString(), style: const TextStyle(color: Color(0xFF58647A), fontSize: 13, height: 1.5))),
           ]),
         )),
       ]),
@@ -176,13 +176,13 @@ class _ComparePageState extends State<ComparePage> {
             padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text((item['topic'] ?? 'Difference').toString(), style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 11)),
+              Text((item['topic'] ?? 'Difference').toString(), style: const TextStyle(color: navy, fontWeight: FontWeight.w800, fontSize: 13)),
               const SizedBox(height: 6),
-              Text('A · ${item['document_a'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 10, height: 1.5)),
-              Text('B · ${item['document_b'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 10, height: 1.5)),
+              Text('A · ${item['document_a'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 12, height: 1.5)),
+              Text('B · ${item['document_b'] ?? 'Not found'}', style: const TextStyle(color: Color(0xFF58647A), fontSize: 12, height: 1.5)),
               if (item['significance'] != null) ...[
                 const SizedBox(height: 5),
-                Text('Why it matters: ${item['significance']}', style: const TextStyle(color: navy, fontSize: 10, height: 1.5, fontWeight: FontWeight.w600)),
+                Text('Why it matters: ${item['significance']}', style: const TextStyle(color: navy, fontSize: 12, height: 1.5, fontWeight: FontWeight.w600)),
               ],
             ]),
           );

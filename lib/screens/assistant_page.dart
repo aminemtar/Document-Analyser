@@ -88,7 +88,7 @@ class _AssistantPageState extends State<AssistantPage> {
           const Icon(Icons.folder_copy_outlined, color: blue, size: 16),
           const SizedBox(width: 7),
           Text('${widget.docs.length} real file(s) available',
-            style: const TextStyle(color: muted, fontSize: 11)),
+            style: const TextStyle(color: muted, fontSize: 13)),
         ]),
       ]),
     ),
@@ -111,7 +111,7 @@ class _AssistantPageState extends State<AssistantPage> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Text(m['text']!,
-                style: TextStyle(color: user ? Colors.white : navy, fontSize: 12, height: 1.5)),
+                style: TextStyle(color: user ? Colors.white : navy, fontSize: 14, height: 1.5)),
             ),
           );
         },

@@ -51,7 +51,7 @@ class InsightsPage extends StatelessWidget {
       sectionTitle('Recently analyzed'),
       if (analyzed.isEmpty)
         const Text('No document has been analyzed yet.',
-          style: TextStyle(color: muted, fontSize: 11))
+          style: TextStyle(color: muted, fontSize: 13))
       else
         ...analyzed.take(5).map((doc) => DocumentTile(doc: doc)),
     ]));

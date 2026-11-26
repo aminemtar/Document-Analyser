@@ -64,7 +64,7 @@ class HomePage extends StatelessWidget {
                   child: const Text('YOUR AI DOCUMENT WORKSPACE',
                       style: TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: 11,
                           letterSpacing: 1.3,
                           fontWeight: FontWeight.w800))),
               const SizedBox(height: 18),
@@ -79,7 +79,7 @@ class HomePage extends StatelessWidget {
               Text('Summarize, discover key details and spot risks with AI.',
                   style: TextStyle(
                       color: Colors.white.withOpacity(.78),
-                      fontSize: 12,
+                      fontSize: 14,
                       height: 1.5)),
               const SizedBox(height: 20),
               FilledButton.icon(
@@ -118,7 +118,7 @@ class HomePage extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text('Your imported files will appear here.',
-              style: TextStyle(color: muted, fontSize: 11)),
+              style: TextStyle(color: muted, fontSize: 13)),
           )
         else
           ...docs.take(3).map((d) =>

@@ -70,7 +70,7 @@ class _LibraryPageState extends State<LibraryPage> {
         const Padding(
             padding: EdgeInsets.only(bottom: 10),
             child: Text('Tap to analyze · swipe to delete',
-                style: TextStyle(color: muted, fontSize: 11))),
+                style: TextStyle(color: muted, fontSize: 13))),
       ...items.map((d) => Dismissible(
             key: ObjectKey(d),
             direction: DismissDirection.endToStart,

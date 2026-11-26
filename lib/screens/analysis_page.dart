@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
@@ -113,9 +114,9 @@ class _AnalysisPageState extends State<AnalysisPage> {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 12)),
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 14)),
                 Text('${doc.size} · ${doc.type} · ${doc.status}',
-                  style: const TextStyle(color: muted, fontSize: 10))
+                  style: const TextStyle(color: muted, fontSize: 12))
               ]))
             ]),
             if (widget.docs.length > 1) ...[
@@ -152,7 +153,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Icon(Icons.error_outline_rounded, color: Color(0xFFD64D5A), size: 19),
               const SizedBox(width: 9), Expanded(child: Text(error!,
-                style: const TextStyle(color: Color(0xFF9C3540), fontSize: 11, height: 1.5)))
+                style: const TextStyle(color: Color(0xFF9C3540), fontSize: 13, height: 1.5)))
             ]))
         ],
         if (data != null) ...[
@@ -160,27 +161,36 @@ class _AnalysisPageState extends State<AnalysisPage> {
           Container(padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [Icon(Icons.verified_rounded, color: blue, size: 18),
-                SizedBox(width: 7), Text('Analysis generated from document text',
-                  style: TextStyle(color: navy, fontSize: 12, fontWeight: FontWeight.w800))]),
+              Row(children: [
+                const Icon(Icons.verified_rounded, color: blue, size: 18),
+                const SizedBox(width: 7),
+                const Expanded(child: Text('Analysis generated from document text',
+                  style: TextStyle(color: navy, fontSize: 14, fontWeight: FontWeight.w800))),
+                IconButton(
+                  tooltip: 'Copy summary',
+                  onPressed: () => _copySummary(doc, data),
+                  icon: const Icon(Icons.copy_rounded, color: blue, size: 20)),
+              ]),
+              const SizedBox(height: 8),
+              _countsRow(data),
               const SizedBox(height: 13),
               Wrap(spacing: 5, children: List.generate(tabs.length, (i) => ChoiceChip(
                 label: Text(tabs[i]), selected: tab == i, onSelected: (_) => setState(() => tab = i),
                 selectedColor: const Color(0xFFE7EDFF),
-                labelStyle: TextStyle(fontSize: 10, color: tab == i ? blue : muted, fontWeight: FontWeight.w700)))),
+                labelStyle: TextStyle(fontSize: 12, color: tab == i ? blue : muted, fontWeight: FontWeight.w700)))),
               const SizedBox(height: 16),
               if (tab == 0) ...[
                 Text((data['document_type'] ?? 'Document').toString().toUpperCase(),
-                  style: const TextStyle(color: blue, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: .8)),
+                  style: const TextStyle(color: blue, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: .8)),
                 const SizedBox(height: 8),
                 const Text('Executive summary', style: TextStyle(fontWeight: FontWeight.w800, color: navy, fontSize: 15)),
                 const SizedBox(height: 7),
                 Text((data['summary'] ?? 'No summary returned.').toString(),
-                  style: const TextStyle(color: Color(0xFF58647A), height: 1.6, fontSize: 12)),
+                  style: const TextStyle(color: Color(0xFF58647A), height: 1.6, fontSize: 14)),
                 if (data['confidence_notes'] != null) ...[
                   const SizedBox(height: 12),
                   Text('Review note: ${data['confidence_notes']}',
-                    style: const TextStyle(color: muted, fontSize: 10, height: 1.5))
+                    style: const TextStyle(color: muted, fontSize: 12, height: 1.5))
                 ]
               ] else if (tab == 1) ...[
                 _stringList(data['key_details'], empty: 'No key details were identified.')
@@ -193,25 +203,78 @@ class _AnalysisPageState extends State<AnalysisPage> {
         ] else if (!busy && error == null) ...[
           const SizedBox(height: 16),
           const Text('Your analysis will appear here after you run the document through the AI model.',
-            style: TextStyle(color: muted, fontSize: 11, height: 1.5))
+            style: TextStyle(color: muted, fontSize: 13, height: 1.5))
         ],
         const SizedBox(height: 14),
         const Text('AI-generated analysis can miss context or misinterpret clauses. Verify important facts and seek professional advice for legal, financial or medical decisions.',
-          style: TextStyle(color: muted, fontSize: 10, height: 1.5))
+          style: TextStyle(color: muted, fontSize: 12, height: 1.5))
       ]
     ]));
   }
 
+  List _listOf(dynamic value) => value is List ? value : const [];
+
+  Widget _countsRow(Map<String, dynamic> data) {
+    final risks = _listOf(data['risks']);
+    final highRisks = risks
+        .where((r) =>
+            r is Map && (r['level'] ?? '').toString().toLowerCase().contains('high'))
+        .length;
+    Widget chip(String value, String label, Color color) => Expanded(
+        child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+                color: color.withOpacity(.08),
+                borderRadius: BorderRadius.circular(12)),
+            child: Column(children: [
+              Text(value,
+                  style: TextStyle(
+                      color: color, fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(label, style: const TextStyle(color: muted, fontSize: 12)),
+            ])));
+    return Row(children: [
+      chip('${_listOf(data['key_details']).length}', 'Details', blue),
+      const SizedBox(width: 8),
+      chip('${risks.length}', highRisks > 0 ? '$highRisks high risk' : 'Risks',
+          highRisks > 0 ? AppColors.danger : blue),
+      const SizedBox(width: 8),
+      chip('${_listOf(data['action_items']).length}', 'Actions', blue),
+    ]);
+  }
+
+  Future<void> _copySummary(DocItem doc, Map<String, dynamic> data) async {
+    final out = StringBuffer('${doc.name}\n\n${data['summary'] ?? ''}\n');
+    void section(String title, dynamic values) {
+      final items = _listOf(values);
+      if (items.isEmpty) return;
+      out.writeln('\n$title');
+      for (final item in items) {
+        final line = item is Map
+            ? '${item['title'] ?? ''}: ${item['detail'] ?? ''}'
+            : item.toString();
+        out.writeln('- $line');
+      }
+    }
+
+    section('Key details', data['key_details']);
+    section('Risks', data['risks']);
+    section('Action items', data['action_items']);
+    await Clipboard.setData(ClipboardData(text: out.toString()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Summary copied'), behavior: SnackBarBehavior.floating));
+  }
+
   Widget _stringList(dynamic values, {required String empty}) {
     final items = values is List ? values : const [];
-    if (items.isEmpty) return Text(empty, style: const TextStyle(color: muted, fontSize: 11));
+    if (items.isEmpty) return Text(empty, style: const TextStyle(color: muted, fontSize: 13));
     return Column(children: items.map((v) => Container(
       width: double.infinity, margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Icon(Icons.check_circle_outline_rounded, color: blue, size: 16),
         const SizedBox(width: 8), Expanded(child: Text(v.toString(),
-          style: const TextStyle(color: navy, fontSize: 11, height: 1.5)))
+          style: const TextStyle(color: navy, fontSize: 13, height: 1.5)))
       ])
     )).toList());
   }
@@ -219,7 +282,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
   Widget _riskList(dynamic values) {
     final items = values is List ? values : const [];
     if (items.isEmpty) return const Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
-      style: TextStyle(color: muted, fontSize: 11, height: 1.5));
+      style: TextStyle(color: muted, fontSize: 13, height: 1.5));
     return Column(children: items.map((v) {
       final item = v is Map ? v : <String, dynamic>{'title': v.toString()};
       final level = (item['level'] ?? 'Review').toString();

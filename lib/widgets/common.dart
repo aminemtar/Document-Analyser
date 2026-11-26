@@ -78,7 +78,7 @@ class StatCard extends StatelessWidget {
         Text(value,
             style: const TextStyle(
                 fontSize: 21, fontWeight: FontWeight.w800, color: navy)),
-        Text(label, style: const TextStyle(fontSize: 10, color: muted)),
+        Text(label, style: const TextStyle(fontSize: 12, color: muted)),
       ]));
 }
 
@@ -108,12 +108,12 @@ class ActionTile extends StatelessWidget {
                 const SizedBox(height: 9),
                 Text(title,
                     style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: navy)),
                 const SizedBox(height: 3),
                 Text(subtitle,
-                    style: const TextStyle(fontSize: 10, color: muted)),
+                    style: const TextStyle(fontSize: 12, color: muted)),
               ])));
 }
 
@@ -144,7 +144,7 @@ class DocumentTile extends StatelessWidget {
                         color: color, size: 20),
                     Text(doc.type,
                         style: TextStyle(
-                            fontSize: 8,
+                            fontSize: 11,
                             fontWeight: FontWeight.w900,
                             color: color))
                   ])),
@@ -152,9 +152,9 @@ class DocumentTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: navy)),
+                  fontSize: 14, fontWeight: FontWeight.w700, color: navy)),
           subtitle: Text('${doc.size}  ·  ${doc.date}',
-              style: const TextStyle(fontSize: 10, color: muted)),
+              style: const TextStyle(fontSize: 12, color: muted)),
           trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
@@ -164,7 +164,7 @@ class DocumentTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20)),
               child: Text(doc.status,
                   style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: doc.status == 'Analyzed'
                           ? const Color(0xFF15966D)
@@ -182,7 +182,7 @@ class MiniMetric extends StatelessWidget {
         Text(value,
             style: const TextStyle(
                 color: blue, fontSize: 19, fontWeight: FontWeight.w800)),
-        Text(label, style: const TextStyle(color: muted, fontSize: 9))
+        Text(label, style: const TextStyle(color: muted, fontSize: 11))
       ]);
 }
 
@@ -196,11 +196,11 @@ class DetailLine extends StatelessWidget {
         SizedBox(
             width: 112,
             child: Text(label,
-                style: const TextStyle(color: muted, fontSize: 11))),
+                style: const TextStyle(color: muted, fontSize: 13))),
         Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    color: navy, fontWeight: FontWeight.w600, fontSize: 11)))
+                    color: navy, fontWeight: FontWeight.w600, fontSize: 13)))
       ]));
 }
 
@@ -223,17 +223,17 @@ class RiskLine extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(level.toUpperCase(),
             style: TextStyle(
-                fontSize: 8,
+                fontSize: 11,
                 letterSpacing: .8,
                 fontWeight: FontWeight.w900,
                 color: color)),
         const SizedBox(height: 5),
         Text(title,
             style: const TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 12, color: navy)),
+                fontWeight: FontWeight.w800, fontSize: 14, color: navy)),
         const SizedBox(height: 4),
         Text(detail,
-            style: const TextStyle(fontSize: 10, color: muted, height: 1.45))
+            style: const TextStyle(fontSize: 12, color: muted, height: 1.45))
       ]));
 }
 
@@ -255,8 +255,8 @@ class CategoryBar extends StatelessWidget {
           Expanded(
               child: Text(label,
                   style: const TextStyle(
-                      color: navy, fontWeight: FontWeight.w700, fontSize: 11))),
-          Text(count, style: const TextStyle(color: muted, fontSize: 10))
+                      color: navy, fontWeight: FontWeight.w700, fontSize: 13))),
+          Text(count, style: const TextStyle(color: muted, fontSize: 12))
         ]),
         const SizedBox(height: 8),
         ClipRRect(
@@ -286,9 +286,9 @@ class SettingsRow extends StatelessWidget {
           leading: Icon(icon, color: blue),
           title: Text(title,
               style: const TextStyle(
-                  color: navy, fontWeight: FontWeight.w700, fontSize: 12)),
+                  color: navy, fontWeight: FontWeight.w700, fontSize: 14)),
           subtitle: Text(subtitle,
-              style: const TextStyle(color: muted, fontSize: 10)),
+              style: const TextStyle(color: muted, fontSize: 12)),
           trailing: Text(trailing ?? '›',
               style: const TextStyle(color: muted, fontSize: 16))));
 }
@@ -316,6 +316,6 @@ class EmptyState extends StatelessWidget {
         const SizedBox(height: 6),
         Text(subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: muted, fontSize: 11, height: 1.5))
+            style: const TextStyle(color: muted, fontSize: 13, height: 1.5))
       ]));
 }

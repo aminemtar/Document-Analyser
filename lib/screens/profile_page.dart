@@ -30,7 +30,7 @@ class ProfilePage extends StatelessWidget {
                       color: navy, fontWeight: FontWeight.w800, fontSize: 17)),
               SizedBox(height: 4),
               Text('Free plan · Personal account',
-                  style: TextStyle(color: muted, fontSize: 11)),
+                  style: TextStyle(color: muted, fontSize: 13)),
             ])),
         sectionTitle('Preferences'),
         const SettingsRow(
@@ -53,6 +53,6 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 18),
         const Center(
             child: Text('DocuMind AI  ·  Version 1.0.0',
-                style: TextStyle(color: muted, fontSize: 10))),
+                style: TextStyle(color: muted, fontSize: 12))),
       ]));
 }
