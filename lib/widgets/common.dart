@@ -102,17 +102,21 @@ class ActionTile extends StatelessWidget {
               color: AppColors.surface, borderRadius: BorderRadius.circular(18)),
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon, color: blue, size: 22),
                 const SizedBox(height: 9),
                 Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: navy)),
                 const SizedBox(height: 3),
                 Text(subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: muted)),
               ])));
 }

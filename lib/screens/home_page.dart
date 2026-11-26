@@ -149,15 +149,16 @@ class HomePage extends StatelessWidget {
             ActionTile(
                 icon: Icons.shield_outlined,
                 title: 'Risk review',
-                subtitle: 'Spot important clauses',
+                subtitle: 'Spot key clauses',
                 onTap: () => onNavigate(2))),
       ]));
 
-  /// Two tiles side by side, both as tall as the taller one.
-  Widget _tileRow(Widget left, Widget right) => IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  /// Two tiles side by side. Tile text is single-line, so both tiles always
+  /// have the same height without measuring them (IntrinsicHeight
+  /// under-measured wrapped text and overflowed).
+  Widget _tileRow(Widget left, Widget right) => Row(children: [
         Expanded(child: left),
         const SizedBox(width: 11),
         Expanded(child: right),
-      ]));
+      ]);
 }
