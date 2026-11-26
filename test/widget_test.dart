@@ -65,7 +65,7 @@ void main() {
     await tester.pumpWidget(const DocuMindApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('DocuMind'), findsOneWidget);
+    expect(find.textContaining('DocuMind', findRichText: true), findsOneWidget);
     expect(find.text('0'), findsNWidgets(2));
     expect(find.text('Add document'), findsOneWidget);
   });

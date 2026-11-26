@@ -236,8 +236,10 @@ class _AppShellState extends State<AppShell> {
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
             leading: Icon(Icons.upload_file_rounded, color: blue),
             title: const Text('Choose a file'),
@@ -263,6 +265,7 @@ class _AppShellState extends State<AppShell> {
                 style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
           ),
         ]),
+        ),
       ),
     );
     if (!mounted) return;
