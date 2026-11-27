@@ -124,8 +124,7 @@ class _DocuMindAppState extends State<DocuMindApp>
     if (dark == _dark) return;
     _captureOldFrame();
     _toDark = dark;
-    _origin = ThemeController.revealOrigin;
-    ThemeController.revealOrigin = null;
+    _origin = ThemeController.toggleCenter;
     _dark = dark;
     AppPalette.dark = dark;
     setState(() {});
@@ -210,7 +209,10 @@ class _RevealPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = origin ?? Offset(size.width - 40, 28);
+    // Normally the sun/moon button. If it is unknown, the corner where the
+    // app bar puts it: the right in English and French, the left in Arabic.
+    final center = origin ??
+        Offset(L10n.isRtl ? 40 : size.width - 40, 28);
     final corners = [
       Offset.zero,
       Offset(size.width, 0),

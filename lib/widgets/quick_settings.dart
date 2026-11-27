@@ -64,11 +64,27 @@ class LanguagePill extends StatelessWidget {
 /// Sun/moon button: switches between light and dark with a small turn
 /// animation. Choosing it sets the appearance explicitly (Profile can set it
 /// back to "System").
-class ThemeToggleButton extends StatelessWidget {
+class ThemeToggleButton extends StatefulWidget {
   const ThemeToggleButton({super.key});
 
   @override
+  State<ThemeToggleButton> createState() => _ThemeToggleButtonState();
+}
+
+class _ThemeToggleButtonState extends State<ThemeToggleButton> {
+  /// Remembers where this button is, so the theme animation can start there.
+  void _registerPosition() {
+    if (!mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.attached && box.hasSize) {
+      ThemeController.toggleCenter =
+          box.localToGlobal(box.size.center(Offset.zero));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerPosition());
     final dark = AppPalette.dark;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final label = dark ? 'Switch to light mode' : 'Switch to dark mode';
@@ -76,11 +92,7 @@ class ThemeToggleButton extends StatelessWidget {
       tooltip: label.tr,
       onPressed: () {
         HapticFeedback.selectionClick();
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null && box.hasSize) {
-          ThemeController.revealOrigin =
-              box.localToGlobal(box.size.center(Offset.zero));
-        }
+        _registerPosition();
         ThemeController.set(dark ? ThemeMode.light : ThemeMode.dark);
       },
       icon: AnimatedSwitcher(
