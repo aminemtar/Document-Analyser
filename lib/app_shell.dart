@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/doc_item.dart';
 import 'services/document_text_extractor.dart';
+import 'services/export_service.dart';
 import 'services/reminder_service.dart';
 import 'services/scan_service.dart';
 import 'screens/analysis_page.dart';
@@ -19,6 +20,7 @@ import 'screens/library_page.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
+import 'widgets/ad_banner.dart';
 import 'widgets/scan_flow.dart';
 
 /// Page indexes. The bottom bar only shows four of them; Analyze, Insights
@@ -230,6 +232,47 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void _say(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+  }
+
+  Future<void> _backup() async {
+    if (documents.isEmpty) {
+      _say('Nothing to back up yet. Add a document first.');
+      return;
+    }
+    try {
+      await ExportService.shareBackup(documents);
+    } catch (_) {
+      _say('Could not create the backup on this device.');
+    }
+  }
+
+  Future<void> _restore() async {
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+          type: FileType.custom, allowedExtensions: ['json'], withData: true);
+      final bytes = picked?.files.single.bytes;
+      if (bytes == null) return;
+      final added =
+          mergeRestored(documents, parseBackup(utf8.decode(bytes)));
+      if (added.isEmpty) {
+        _say('Everything in this backup is already in your library.');
+        return;
+      }
+      setState(() => documents.addAll(added));
+      await _saveDocuments();
+      _say('Restored ${added.length} ${added.length == 1 ? 'document' : 'documents'}. '
+          'Upload the original file again to re-run an analysis.');
+    } on FormatException catch (e) {
+      _say(e.message);
+    } catch (_) {
+      _say('Could not read that file.');
+    }
+  }
+
   /// The one entry point for adding a document: a file, a camera scan, or
   /// photos from the gallery.
   Future<void> _showAddSheet() async {
@@ -418,7 +461,9 @@ class _AppShellState extends State<AppShell> {
       Pages.compare: ComparePage(docs: documents),
       Pages.profile: ProfilePage(
           remindersEnabled: remindersEnabled,
-          onRemindersChanged: _setReminders),
+          onRemindersChanged: _setReminders,
+          onBackup: _backup,
+          onRestore: _restore),
     };
     final isSubPage = Pages.isSubPage(selected);
     return PopScope(
@@ -480,7 +525,12 @@ class _AppShellState extends State<AppShell> {
                 label: const Text('Add document',
                     style: TextStyle(fontWeight: FontWeight.w700)),
               ),
-        bottomNavigationBar: NavigationBar(
+        bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Banner ads only on browsing screens, never while reading results
+          // or chatting, and never for Pro users.
+          if (selected == Pages.home || selected == Pages.library)
+            const AdBanner(),
+          NavigationBar(
           selectedIndex: Pages.tabFor(selected),
           onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
           height: 70,
@@ -505,6 +555,7 @@ class _AppShellState extends State<AppShell> {
                 label: 'Profile'),
           ],
         ),
+        ]),
       ),
     );
   }

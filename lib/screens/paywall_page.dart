@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+import '../services/ad_service.dart';
+import '../services/billing_service.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
 
-/// Example prices, only used to design the screen. Replace them with the
-/// store's real localized prices when billing is connected.
-const _monthlyPrice = '\$4.99';
-const _yearlyPrice = '\$39.99';
-
-/// Whether real purchases are wired up. While false, the button only flips a
-/// local preview flag and the screen says so.
-const billingConnected = false;
+/// Shown only until the store returns the real localized prices.
+const _monthlyFallback = '\$4.99';
+const _yearlyFallback = '\$39.99';
 
 class PaywallPage extends StatefulWidget {
   const PaywallPage({super.key});
@@ -24,15 +21,65 @@ class _PaywallPageState extends State<PaywallPage> {
   @override
   void initState() {
     super.initState();
+    isPro = UsageService.proNotifier.value;
     UsageService.isPro().then((v) {
       if (mounted) setState(() => isPro = v);
     });
+    UsageService.proNotifier.addListener(_onPro);
+    BillingService.products.addListener(_refresh);
+    BillingService.busy.addListener(_refresh);
+    BillingService.message.addListener(_refresh);
+    AdService.rewardedReady.addListener(_refresh);
+    if (BillingService.supported && BillingService.products.value.isEmpty) {
+      BillingService.init().then((_) => BillingService.loadProducts());
+    }
   }
 
-  Future<void> _primary() async {
-    await UsageService.setPro(!isPro);
-    if (mounted) Navigator.of(context).pop();
+  void _onPro() {
+    if (mounted) setState(() => isPro = UsageService.proNotifier.value);
   }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    UsageService.proNotifier.removeListener(_onPro);
+    BillingService.products.removeListener(_refresh);
+    BillingService.busy.removeListener(_refresh);
+    BillingService.message.removeListener(_refresh);
+    AdService.rewardedReady.removeListener(_refresh);
+    BillingService.message.value = null;
+    super.dispose();
+  }
+
+  String get _selectedId => yearly ? proYearlyId : proMonthlyId;
+
+  Future<void> _buy() async {
+    final product = BillingService.product(_selectedId);
+    if (product == null) {
+      await BillingService.loadProducts();
+      return;
+    }
+    await BillingService.buy(product);
+  }
+
+  Future<void> _watchAd() async {
+    final earned = await AdService.showRewarded();
+    if (!mounted) return;
+    if (earned) {
+      await UsageService.addBonus();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('You earned 1 extra analysis.'),
+          behavior: SnackBarBehavior.floating));
+      Navigator.of(context).pop();
+    }
+  }
+
+  String _price(String id, String fallback) =>
+      BillingService.product(id)?.price ?? fallback;
 
   Widget _benefit(IconData icon, String text) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
@@ -154,47 +201,83 @@ class _PaywallPageState extends State<PaywallPage> {
             _benefit(Icons.chat_bubble_outline_rounded,
                 'Unlimited assistant questions'),
             _benefit(Icons.compare_arrows_rounded, 'Compare documents side by side'),
+            _benefit(Icons.block_rounded, 'No ads'),
             const SizedBox(height: 14),
             if (!isPro) ...[
               _plan(
                   selected: yearly,
                   title: 'Yearly',
-                  price: _yearlyPrice,
+                  price: _price(proYearlyId, _yearlyFallback),
                   note: 'Best value, billed once a year',
                   badge: 'SAVE 33%',
                   onTap: () => setState(() => yearly = true)),
               _plan(
                   selected: !yearly,
                   title: 'Monthly',
-                  price: _monthlyPrice,
+                  price: _price(proMonthlyId, _monthlyFallback),
                   note: 'Cancel any time',
                   onTap: () => setState(() => yearly = false)),
             ],
-            if (!billingConnected)
+            if (BillingService.message.value != null)
               Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                       color: AppColors.warningSoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm)),
-                  child: Text(
-                      'Preview: purchases are not connected yet. Nothing is charged, and the prices shown are examples.',
+                  child: Text(BillingService.message.value!,
                       style: TextStyle(
                           color: AppColors.warning, fontSize: 12, height: 1.4))),
-            SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                    onPressed: _primary,
-                    style: FilledButton.styleFrom(
-                        backgroundColor: blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: Text(
-                        isPro
-                            ? 'Switch back to Free (preview)'
-                            : 'Unlock Pro (preview)',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)))),
+            if (isPro)
+              Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                      color: AppColors.successSoft,
+                      borderRadius: BorderRadius.circular(AppRadius.sm)),
+                  child: Text(
+                      'You are on Pro. Manage or cancel your subscription in your Google Play or App Store account settings.',
+                      style: TextStyle(
+                          color: AppColors.success, fontSize: 13, height: 1.4)))
+            else
+              SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                      onPressed: BillingService.busy.value ||
+                              !BillingService.supported
+                          ? null
+                          : _buy,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16)),
+                      child: BillingService.busy.value
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.5, color: Colors.white))
+                          : Text(
+                              BillingService.supported
+                                  ? 'Upgrade to Pro'
+                                  : 'Available on Android and iOS',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w700)))),
+            if (!isPro && BillingService.supported)
+              Center(
+                  child: TextButton(
+                      onPressed: BillingService.busy.value
+                          ? null
+                          : BillingService.restore,
+                      child: Text('Restore purchases',
+                          style: TextStyle(color: blue)))),
+            if (!isPro && AdService.rewardedReady.value)
+              SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                      onPressed: _watchAd,
+                      icon: const Icon(Icons.play_circle_outline_rounded),
+                      label: const Text('Watch an ad for 1 extra analysis'))),
             const SizedBox(height: 6),
             Center(
                 child: TextButton(

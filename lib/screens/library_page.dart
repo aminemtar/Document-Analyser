@@ -1,8 +1,39 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/rename_dialog.dart';
+
+/// Whether a document matches the search text: its name, or anything in its
+/// saved analysis (summary, details, risks, dates, amounts).
+bool matchesQuery(DocItem doc, String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return true;
+  if (doc.name.toLowerCase().contains(q)) return true;
+  final json = doc.analysisJson;
+  if (json == null) return false;
+  try {
+    return _textValues(jsonDecode(json)).any((t) => t.toLowerCase().contains(q));
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Every text value inside decoded JSON (not the key names).
+Iterable<String> _textValues(Object? node) sync* {
+  if (node is String) {
+    yield node;
+  } else if (node is Map) {
+    for (final v in node.values) {
+      yield* _textValues(v);
+    }
+  } else if (node is List) {
+    for (final v in node) {
+      yield* _textValues(v);
+    }
+  }
+}
 
 class LibraryPage extends StatefulWidget {
   final List<DocItem> docs;
@@ -34,7 +65,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget build(BuildContext context) {
     final items = widget.docs
         .where((d) =>
-            d.name.toLowerCase().contains(query.toLowerCase()) &&
+            matchesQuery(d, query) &&
             (filter == 'All' || d.type == filter))
         .toList();
     return PageBody(
@@ -48,7 +79,7 @@ class _LibraryPageState extends State<LibraryPage> {
       TextField(
           onChanged: (v) => setState(() => query = v),
           decoration: InputDecoration(
-              hintText: 'Search documents...',
+              hintText: 'Search names and analyses...',
               prefixIcon: Icon(Icons.search_rounded, color: muted),
               filled: true,
               fillColor: AppColors.surface,

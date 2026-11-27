@@ -3,6 +3,7 @@
          Reminders are inexact, so no exact-alarm permission is needed. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <application
         android:label="DocuMind AI"
         android:name="${applicationName}"
@@ -40,6 +41,11 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+        <!-- AdMob app id. This is Google's TEST id: replace it with your own
+             from the AdMob console before publishing. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

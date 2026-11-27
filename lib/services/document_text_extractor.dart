@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
+import 'dart:math' as math;
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart' as px;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import 'package:xml/xml.dart';
+import 'scan_service.dart';
 
 class DocumentTextExtractor {
   /// Extracted text by stored file path. Imported files get a unique name
@@ -12,6 +16,50 @@ class DocumentTextExtractor {
 
   /// Drops a cached text, e.g. after the file was deleted for good.
   static void forget(String path) => _cache.remove(path);
+
+  /// Most pages read from a scanned PDF, to keep it quick and the text within
+  /// the AI's context limit.
+  static const maxOcrPages = 8;
+
+  /// Renders the pages of a scanned PDF and reads their text on the device.
+  /// Returns an empty string if nothing could be read.
+  static Future<String> _ocrPdf(String path) async {
+    final pages = <String>[];
+    px.PdfDocument? document;
+    try {
+      document = await px.PdfDocument.openFile(path);
+      final count = math.min(document.pagesCount, maxOcrPages);
+      final dir = await getTemporaryDirectory();
+      for (var i = 1; i <= count; i++) {
+        final page = await document.getPage(i);
+        try {
+          // About 1600px wide is enough for printed text and keeps memory low.
+          final scale = 1600 / page.width;
+          final image = await page.render(
+              width: page.width * scale,
+              height: page.height * scale,
+              format: px.PdfPageImageFormat.jpeg,
+              backgroundColor: '#ffffff');
+          if (image == null) continue;
+          final file = File(
+              '${dir.path}/ocr_${DateTime.now().microsecondsSinceEpoch}_$i.jpg');
+          await file.writeAsBytes(image.bytes, flush: true);
+          try {
+            pages.add(await ScanService.recognize(file.path));
+          } finally {
+            await file.delete();
+          }
+        } finally {
+          await page.close();
+        }
+      }
+    } catch (_) {
+      return '';
+    } finally {
+      await document?.close();
+    }
+    return joinScanPages(pages);
+  }
 
   static Future<String> extract(String path, String type) async {
     final file = File(path);
@@ -25,6 +73,13 @@ class DocumentTextExtractor {
       final pdf = sf.PdfDocument(inputBytes: bytes);
       try { text = sf.PdfTextExtractor(pdf).extractText(); }
       finally { pdf.dispose(); }
+      // A scanned PDF has no text layer: read its pages as images instead.
+      if (text.trim().length < 40) {
+        final ocr = await _ocrPdf(path);
+        if (ocr.isNotEmpty) {
+          text = '[This text was read from scanned pages and may contain recognition errors.]\n$ocr';
+        }
+      }
     } else if (ext == 'DOCX') {
       final archive = ZipDecoder().decodeBytes(bytes);
       final entries = archive.files.where((f) => f.name == 'word/document.xml').toList();

@@ -103,6 +103,7 @@ class _AssistantPageState extends State<AssistantPage> {
       busy = true;
       error = null;
     });
+    Map<String, String>? reply;
     try {
       final available = <Map<String, String>>[];
       for (final doc in widget.docs) {
@@ -120,15 +121,32 @@ class _AssistantPageState extends State<AssistantPage> {
       if (available.isEmpty) {
         throw Exception('No readable uploaded files were found. Re-import the original documents and try again.');
       }
-      final answer = await OpenRouterDocumentAI.ask(
+      // The answer appears as it is written. It is added to the list even if
+      // the user leaves the tab meanwhile, so it is saved either way.
+      messages.add({'role': 'ai', 'text': ''});
+      reply = messages.last;
+      final buffer = StringBuffer();
+      await for (final piece in OpenRouterDocumentAI.askStream(
         question: question,
         documents: available,
-      );
-      // Add the answer even if the user left the tab meanwhile, so it is saved.
-      messages.add({'role': 'ai', 'text': answer});
+      )) {
+        buffer.write(piece);
+        reply['text'] = buffer.toString();
+        if (mounted) setState(() {});
+      }
+      if (buffer.isEmpty) {
+        throw Exception('The AI service returned an empty response.');
+      }
     } catch (e) {
       error = e.toString().replaceFirst('Exception: ', '');
-      messages.add({'role': 'ai', 'text': 'I couldn’t complete that request. ${error!}'});
+      final failure = 'I couldn’t complete that request. ${error!}';
+      if (reply != null && (reply['text'] ?? '').isEmpty) {
+        reply['text'] = failure;
+      } else if (reply != null) {
+        reply['text'] = '${reply['text']}\n\n(The answer was cut off: ${error!})';
+      } else {
+        messages.add({'role': 'ai', 'text': failure});
+      }
     } finally {
       busy = false;
       if (mounted) setState(() {});

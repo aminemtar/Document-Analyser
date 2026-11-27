@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app_shell.dart';
+import 'services/ad_service.dart';
+import 'services/billing_service.dart';
+import 'services/usage_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
@@ -13,7 +18,11 @@ void main() async {
     // Keep the app usable; the analysis screen explains how to configure the key.
   }
   await ThemeController.load();
+  await UsageService.isPro();
   runApp(const DocuMindApp());
+  // Store and ads start after the first frame so they never delay launch.
+  unawaited(BillingService.init());
+  unawaited(AdService.init());
 }
 
 class DocuMindApp extends StatefulWidget {

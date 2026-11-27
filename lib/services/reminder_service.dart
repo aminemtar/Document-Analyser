@@ -19,6 +19,15 @@ List<DateTime> reminderMoments(DateTime day, DateTime now) {
   return [dayBefore, dayOf].where((t) => t.isAfter(now)).toList();
 }
 
+/// The next Monday at [reminderHour] local time that is after [now].
+DateTime nextWeeklyDigest(DateTime now) {
+  var day = DateTime(now.year, now.month, now.day, reminderHour);
+  while (day.weekday != DateTime.monday || !day.isAfter(now)) {
+    day = DateTime(day.year, day.month, day.day + 1, reminderHour);
+  }
+  return day;
+}
+
 class _Planned {
   final DateTime at;
   final String title, body;
@@ -141,6 +150,26 @@ abstract final class ReminderService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     }
+    if (docs.isNotEmpty) await _scheduleWeeklyDigest(details, clock);
     return chosen.length;
+  }
+
+  static const _digestId = 9000;
+
+  /// A gentle weekly nudge, Mondays at 09:00, to look at what needs
+  /// attention. Rebuilt on each sync, so it follows the device time zone
+  /// and daylight saving changes whenever the app is opened.
+  static Future<void> _scheduleWeeklyDigest(
+      NotificationDetails details, DateTime now) async {
+    await _plugin.zonedSchedule(
+      id: _digestId,
+      title: 'Your week in DocuMind',
+      body: 'Check upcoming dates and documents that need attention.',
+      scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
+          tz.UTC, nextWeeklyDigest(now).millisecondsSinceEpoch),
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+    );
   }
 }

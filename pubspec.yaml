@@ -25,11 +25,27 @@ dependencies:
   # Scanning: take or pick photos, then read their text on the device.
   image_picker: ^1.1.2
   google_mlkit_text_recognition: ^0.15.0
+  # Monetization: AdMob ads (with Google's consent form) and store billing.
+  google_mobile_ads: ^6.0.0
+  in_app_purchase: ^3.2.3
+  # Share an analysis, export and restore a backup.
+  share_plus: ^11.1.0
+  # Render scanned PDF pages to images so they can be read by the scanner.
+  pdfx: ^2.9.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#2147D8"
+  adaptive_icon_foreground: assets/icon/icon_foreground.png
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

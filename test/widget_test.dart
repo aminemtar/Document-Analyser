@@ -113,14 +113,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Free plan'), findsOneWidget);
-    expect(find.text('3 of 3 analyses left this month'), findsOneWidget);
+    expect(find.text('3 analyses left (3 free each month)'), findsOneWidget);
+    expect(find.text('Back up analyses'), findsOneWidget);
     expect(find.text('Date reminders'), findsOneWidget);
 
     await tester.tap(find.text('Upgrade'));
     await tester.pumpAndSettle();
     expect(find.text('DocuMind Pro'), findsOneWidget);
-    expect(find.textContaining('Preview: purchases are not connected'),
-        findsOneWidget);
+    // No store on the test machine, so the button says so instead of
+    // pretending to charge anything.
+    expect(find.text('Available on Android and iOS'), findsOneWidget);
+    expect(find.text('No ads'), findsOneWidget);
   });
 
   testWidgets('Add document offers a file, a camera scan and photos',

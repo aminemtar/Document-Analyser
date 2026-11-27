@@ -70,5 +70,16 @@
 	<string>DocuMind uses the camera to scan paper documents. Photos stay on this device; only the text you choose to analyze is sent to the AI.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>DocuMind reads text from photos you choose, to turn them into documents.</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier is used to show you more relevant ads. You can use the app fully without allowing it.</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 </dict>
 </plist>

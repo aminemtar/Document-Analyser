@@ -2,6 +2,21 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+/// The text carried by one line of a streamed (server-sent events) reply, or
+/// null for lines that carry none (comments, blank lines, the final DONE).
+String? parseSseDelta(String line) {
+  if (!line.startsWith('data:')) return null;
+  final payload = line.substring(5).trim();
+  if (payload.isEmpty || payload == '[DONE]') return null;
+  try {
+    final json = jsonDecode(payload);
+    final content = json['choices']?[0]?['delta']?['content'];
+    return content is String ? content : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 class OpenRouterDocumentAI {
   static String get _apiKey => dotenv.env['OPENROUTER_API_KEY']?.trim() ?? '';
   static String get _model =>
@@ -80,6 +95,60 @@ class OpenRouterDocumentAI {
       user: 'QUESTION:\n$question\n\nUPLOADED DOCUMENTS:\n$context',
       temperature: 0.1,
     );
+  }
+
+  /// Like [ask], but yields the answer piece by piece as it is written.
+  static Stream<String> askStream({
+    required String question,
+    required List<Map<String, String>> documents,
+  }) async* {
+    if (_apiKey.isEmpty) {
+      throw Exception('OpenRouter API key is missing. Add OPENROUTER_API_KEY to the .env file in the project root.');
+    }
+    final context = documents.map((d) =>
+      'FILE: ${d['name']}\nCONTENT:\n${d['text']}'
+    ).join('\n\n--- NEXT DOCUMENT ---\n\n');
+    final client = http.Client();
+    try {
+      final request = http.Request(
+          'POST', Uri.parse('https://openrouter.ai/api/v1/chat/completions'))
+        ..headers.addAll({
+          'Authorization': 'Bearer $_apiKey',
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'HTTP-Referer': 'https://github.com/aminemtar/Document-Analyser',
+          'X-Title': 'DocuMind AI',
+        })
+        ..body = jsonEncode({
+          'model': _model,
+          'temperature': 0.1,
+          'stream': true,
+          'messages': [
+            {
+              'role': 'system',
+              'content': 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful.'
+            },
+            {
+              'role': 'user',
+              'content': 'QUESTION:\n$question\n\nUPLOADED DOCUMENTS:\n$context'
+            },
+          ],
+        });
+      final response =
+          await client.send(request).timeout(const Duration(seconds: 90));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final body = await response.stream.bytesToString();
+        throw Exception('AI service returned ${response.statusCode}: ${body.length > 500 ? body.substring(0, 500) : body}');
+      }
+      await for (final line in response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        final piece = parseSseDelta(line);
+        if (piece != null && piece.isNotEmpty) yield piece;
+      }
+    } finally {
+      client.close();
+    }
   }
 
   static Future<Map<String, dynamic>> compare({

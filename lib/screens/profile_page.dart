@@ -3,15 +3,20 @@ import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
 import '../widgets/common.dart';
+import '../services/ad_service.dart';
 import 'paywall_page.dart';
 
 class ProfilePage extends StatelessWidget {
   final bool remindersEnabled;
   final ValueChanged<bool> onRemindersChanged;
+  final VoidCallback onBackup;
+  final VoidCallback onRestore;
   const ProfilePage(
       {super.key,
       required this.remindersEnabled,
-      required this.onRemindersChanged});
+      required this.onRemindersChanged,
+      required this.onBackup,
+      required this.onRestore});
 
   @override
   Widget build(BuildContext context) => PageBody(
@@ -102,6 +107,34 @@ class ProfilePage extends StatelessWidget {
                     style: TextStyle(color: muted, fontSize: 12)),
                 value: remindersEnabled,
                 onChanged: onRemindersChanged)),
+        sectionTitle('Your data'),
+        Card(
+            margin: const EdgeInsets.only(bottom: 9),
+            child: ListTile(
+                leading: Icon(Icons.cloud_upload_outlined, color: blue),
+                title: Text('Back up analyses',
+                    style: TextStyle(
+                        color: navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+                subtitle: Text(
+                    'Save your library and analyses to a file (original files are not included)',
+                    style: TextStyle(color: muted, fontSize: 12)),
+                onTap: onBackup)),
+        Card(
+            margin: const EdgeInsets.only(bottom: 9),
+            child: ListTile(
+                leading: Icon(Icons.settings_backup_restore_rounded,
+                    color: blue),
+                title: Text('Restore from backup',
+                    style: TextStyle(
+                        color: navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+                subtitle: Text('Add analyses from a DocuMind backup file',
+                    style: TextStyle(color: muted, fontSize: 12)),
+                onTap: onRestore)),
+        const _AdPrivacyRow(),
         const SettingsRow(
             icon: Icons.lock_outline_rounded,
             title: 'Privacy & security',
@@ -172,7 +205,7 @@ class _PlanCardState extends State<_PlanCard> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text(isPro ? 'Pro plan (preview)' : 'Free plan',
+                    Text(isPro ? 'Pro plan' : 'Free plan',
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -181,7 +214,7 @@ class _PlanCardState extends State<_PlanCard> {
                     Text(
                         isPro
                             ? 'Unlimited analyses'
-                            : '$left of $total analyses left this month',
+                            : '$left ${left == 1 ? 'analysis' : 'analyses'} left (${total} free each month)',
                         style: const TextStyle(
                             color: Color(0xFFDCE6FF), fontSize: 13)),
                   ])),
@@ -190,5 +223,40 @@ class _PlanCardState extends State<_PlanCard> {
                       color: Colors.white, fontWeight: FontWeight.w800)),
               const Icon(Icons.chevron_right_rounded, color: Colors.white),
             ])));
+  }
+}
+
+/// "Ad privacy choices": only shown where the consent form is required
+/// (for example the EU and UK), as the rules ask.
+class _AdPrivacyRow extends StatefulWidget {
+  const _AdPrivacyRow();
+  @override
+  State<_AdPrivacyRow> createState() => _AdPrivacyRowState();
+}
+
+class _AdPrivacyRowState extends State<_AdPrivacyRow> {
+  bool required = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AdService.privacyOptionsRequired().then((v) {
+      if (mounted) setState(() => required = v);
+    }).catchError((_) {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!required) return const SizedBox.shrink();
+    return Card(
+        margin: const EdgeInsets.only(bottom: 9),
+        child: ListTile(
+            leading: Icon(Icons.privacy_tip_outlined, color: blue),
+            title: Text('Ad privacy choices',
+                style: TextStyle(
+                    color: navy, fontWeight: FontWeight.w700, fontSize: 14)),
+            subtitle: Text('Change your consent for personalized ads',
+                style: TextStyle(color: muted, fontSize: 12)),
+            onTap: AdService.showPrivacyOptions));
   }
 }

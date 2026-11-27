@@ -5,6 +5,8 @@ import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
 import '../services/usage_service.dart';
+import '../services/ad_service.dart';
+import '../services/export_service.dart';
 import 'paywall_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -88,7 +90,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
     try {
       final text = await DocumentTextExtractor.extract(doc.path!, doc.type);
       if (text.trim().length < 40) {
-        throw Exception('No readable text was found. If this is a scanned PDF, OCR is required before it can be analyzed.');
+        throw Exception('No readable text was found, even after trying to read the pages as images. Try a clearer scan or a text-based file.');
       }
       final analysis = await OpenRouterDocumentAI.analyze(
         fileName: doc.name, fileType: doc.type, text: text);
@@ -96,6 +98,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       final updated = doc.copyWith(status: 'Analyzed', analysisJson: encoded);
       widget.onUpdate(updated);
       await UsageService.recordAnalysis();
+      AdService.onAnalysisCompleted();
       if (mounted) setState(() => result = analysis);
     } catch (e) {
       if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
@@ -180,6 +183,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 const SizedBox(width: 7),
                 Expanded(child: Text('Analysis generated from document text',
                   style: TextStyle(color: navy, fontSize: 14, fontWeight: FontWeight.w800))),
+                IconButton(
+                  tooltip: 'Share analysis',
+                  onPressed: () => _shareSummary(doc, data),
+                  icon: Icon(Icons.ios_share_rounded, color: blue, size: 20)),
                 IconButton(
                   tooltip: 'Copy summary',
                   onPressed: () => _copySummary(doc, data),
@@ -391,26 +398,22 @@ class _AnalysisPageState extends State<AnalysisPage> {
   }
 
   Future<void> _copySummary(DocItem doc, Map<String, dynamic> data) async {
-    final out = StringBuffer('${doc.name}\n\n${data['summary'] ?? ''}\n');
-    void section(String title, dynamic values) {
-      final items = _listOf(values);
-      if (items.isEmpty) return;
-      out.writeln('\n$title');
-      for (final item in items) {
-        final line = item is Map
-            ? '${item['title'] ?? ''}: ${item['detail'] ?? ''}'
-            : item.toString();
-        out.writeln('- $line');
-      }
-    }
-
-    section('Key details', data['key_details']);
-    section('Risks', data['risks']);
-    section('Action items', data['action_items']);
-    await Clipboard.setData(ClipboardData(text: out.toString()));
+    await Clipboard.setData(
+        ClipboardData(text: analysisToText(doc.name, data)));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Summary copied'), behavior: SnackBarBehavior.floating));
+  }
+
+  Future<void> _shareSummary(DocItem doc, Map<String, dynamic> data) async {
+    try {
+      await ExportService.shareAnalysis(doc.name, data);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Sharing is not available on this device.'),
+          behavior: SnackBarBehavior.floating));
+    }
   }
 
   Widget _stringList(dynamic values, {required String empty}) {
