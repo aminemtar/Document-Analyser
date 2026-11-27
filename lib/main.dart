@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,8 +40,38 @@ class DocuMindApp extends StatefulWidget {
 }
 
 class _DocuMindAppState extends State<DocuMindApp>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late bool _dark;
+  final GlobalKey _appKey = GlobalKey();
+  late final AnimationController _fade = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+      value: 0)
+    ..addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        final image = _snapshot;
+        setState(() => _snapshot = null);
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => image?.dispose());
+      }
+    });
+  ui.Image? _snapshot;
+
+  /// Picture of the screen before the theme changes. It is faded out over the
+  /// new theme, so the switch is a smooth cross-fade instead of a hard cut.
+  void _captureOldFrame() {
+    try {
+      final boundary =
+          _appKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null || !boundary.hasSize) return;
+      _snapshot?.dispose();
+      _snapshot = boundary.toImageSync(
+          pixelRatio: WidgetsBinding
+              .instance.platformDispatcher.views.first.devicePixelRatio);
+    } catch (_) {
+      _snapshot = null; // No smooth fade available: the theme just switches.
+    }
+  }
 
   String _resolveLanguage() => L10n.resolve(LocaleController.choice.value,
       WidgetsBinding.instance.platformDispatcher.locale.languageCode);
@@ -66,6 +98,8 @@ class _DocuMindAppState extends State<DocuMindApp>
   @override
   void dispose() {
     ThemeController.mode.removeListener(_onThemeChanged);
+    _fade.dispose();
+    _snapshot?.dispose();
     LocaleController.choice.removeListener(_onLanguageChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -90,10 +124,12 @@ class _DocuMindAppState extends State<DocuMindApp>
   void _onThemeChanged() {
     final dark = _resolveDark();
     if (dark == _dark) return;
+    _captureOldFrame();
     _dark = dark;
     AppPalette.dark = dark;
     setState(() {});
     _rebuildEverything();
+    if (_snapshot != null) _fade.forward(from: 0);
   }
 
   /// Colors are read while building, but `const` widgets are skipped when
@@ -109,7 +145,8 @@ class _DocuMindAppState extends State<DocuMindApp>
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) {
+    final app = MaterialApp(
         title: 'DocuMind AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.build(),
@@ -122,6 +159,17 @@ class _DocuMindAppState extends State<DocuMindApp>
         ],
         home: const AppShell(),
       );
+    final old = _snapshot;
+    return Stack(textDirection: TextDirection.ltr, children: [
+      Positioned.fill(key: const ValueKey('app'), child: RepaintBoundary(key: _appKey, child: app)),
+      if (old != null)
+        Positioned.fill(
+            child: IgnorePointer(
+                child: FadeTransition(
+                    opacity: ReverseAnimation(_fade),
+                    child: RawImage(image: old, fit: BoxFit.fill)))),
+    ]);
+  }
 }
 
 
