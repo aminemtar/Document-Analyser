@@ -4,10 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// The user's appearance choice: follow the system, or force light or dark.
 /// Kept on the device.
 abstract final class ThemeController {
-  /// Where the light/dark switch was tapped, in screen coordinates. The theme
-  /// change spreads from (or shrinks back to) this point. Null for changes
-  /// that do not come from a tap, such as the phone's own dark mode.
-  static Offset? revealOrigin;
+  /// Centre of the app bar's sun/moon button on screen, kept up to date by the
+  /// button itself. Every theme change, whether it comes from that button,
+  /// from Profile or from the phone, spreads from (or shrinks back into) this
+  /// point, so it always looks like the icon is what changed the theme.
+  static Offset? toggleCenter;
 
   static const _key = 'theme_mode';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../l10n/tr_text.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
-import '../theme/theme_controller.dart';
+import '../widgets/theme_mode_selector.dart';
 import '../widgets/common.dart';
 import '../services/ad_service.dart';
 import '../l10n/locale_controller.dart';
@@ -70,26 +70,7 @@ class ProfilePage extends StatelessWidget {
                                 fontSize: 14)),
                       ]),
                       const SizedBox(height: 12),
-                      ValueListenableBuilder<ThemeMode>(
-                          valueListenable: ThemeController.mode,
-                          builder: (context, mode, _) => SizedBox(
-                              width: double.infinity,
-                              child: SegmentedButton<ThemeMode>(
-                                  showSelectedIcon: false,
-                                  segments: const [
-                                    ButtonSegment(
-                                        value: ThemeMode.system,
-                                        label: Text('System')),
-                                    ButtonSegment(
-                                        value: ThemeMode.light,
-                                        label: Text('Light')),
-                                    ButtonSegment(
-                                        value: ThemeMode.dark,
-                                        label: Text('Dark')),
-                                  ],
-                                  selected: {mode},
-                                  onSelectionChanged: (selection) =>
-                                      ThemeController.set(selection.first)))),
+                      const ThemeModeSelector(),
                     ]))),
         Card(
             margin: const EdgeInsets.only(bottom: 9),
