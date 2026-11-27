@@ -87,6 +87,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
           .push(MaterialPageRoute(builder: (_) => const PaywallPage()));
       return;
     }
+    if (!await UsageService.canUseDaily('analysis')) {
+      if (mounted) setState(() => error = UsageService.dailyLimitMessage);
+      return;
+    }
     if (!mounted) return;
     setState(() { busy = true; error = null; result = null; });
     try {
@@ -100,6 +104,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       final updated = doc.copyWith(status: 'Analyzed', analysisJson: encoded);
       widget.onUpdate(updated);
       await UsageService.recordAnalysis();
+      await UsageService.recordDaily('analysis');
       AdService.onAnalysisCompleted();
       if (mounted) setState(() => result = analysis);
     } catch (e) {

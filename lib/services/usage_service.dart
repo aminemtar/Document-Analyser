@@ -8,6 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// a server to enforce it.
 abstract final class UsageService {
   static const freeMonthlyAnalyses = 3;
+  /// Daily fair-use caps (per calendar day, on this device).
+  static const freeDailyQuestions = 10;
+  static const proDailyQuestions = 100;
+  static const proDailyAnalyses = 30;
+  static const dailyLimitMessage =
+      'Daily limit reached for this feature. Please come back tomorrow.';
   static const _proKey = 'plan_pro_preview';
   static const _bonusKey = 'bonus_analyses';
 
@@ -64,5 +70,26 @@ abstract final class UsageService {
     } else {
       await prefs.setInt(key, usedNow + 1);
     }
+  }
+
+  static String _dayKey(String kind, DateTime now) =>
+      'daily_${kind}_${now.year}_${now.month}_${now.day}';
+
+  static int _dailyCap(String kind, bool pro) => kind == 'analysis'
+      ? (pro ? proDailyAnalyses : 1 << 30)
+      : (pro ? proDailyQuestions : freeDailyQuestions);
+
+  /// Whether one more [kind] ('analysis' or 'ask', where comparisons count as
+  /// 'ask') is allowed today.
+  static Future<bool> canUseDaily(String kind, {DateTime? now}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final used = prefs.getInt(_dayKey(kind, now ?? DateTime.now())) ?? 0;
+    return used < _dailyCap(kind, await isPro());
+  }
+
+  static Future<void> recordDaily(String kind, {DateTime? now}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = _dayKey(kind, now ?? DateTime.now());
+    await prefs.setInt(key, (prefs.getInt(key) ?? 0) + 1);
   }
 }

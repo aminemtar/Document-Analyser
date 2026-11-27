@@ -219,6 +219,8 @@ const Map<String, String> frTexts = {
   "Your week in DocuMind": "Votre semaine dans DocuMind",
   "Check upcoming dates and documents that need attention.": "Consultez les prochaines dates et les documents à surveiller.",
   "Tap to open": "Touchez pour ouvrir",
+  "The AI service is busy or its daily limit is reached. Please try again in a few minutes.": "Le service d’IA est occupé ou sa limite quotidienne est atteinte. Réessayez dans quelques minutes.",
+  "Daily limit reached for this feature. Please come back tomorrow.": "Limite quotidienne atteinte pour cette fonction. Revenez demain.",
 };
 
 /// English text -> Arabic.
@@ -439,6 +441,8 @@ const Map<String, String> arTexts = {
   "Your week in DocuMind": "أسبوعك في DocuMind",
   "Check upcoming dates and documents that need attention.": "اطّلع على المواعيد القادمة والمستندات التي تحتاج انتباهًا.",
   "Tap to open": "اضغط للفتح",
+  "The AI service is busy or its daily limit is reached. Please try again in a few minutes.": "خدمة الذكاء الاصطناعي مشغولة أو بلغت حدها اليومي. حاول مجددًا بعد بضع دقائق.",
+  "Daily limit reached for this feature. Please come back tomorrow.": "تم بلوغ الحد اليومي لهذه الميزة. عد غدًا من فضلك.",
 };
 
 /// Texts with numbers or names inside: (pattern, French, Arabic).

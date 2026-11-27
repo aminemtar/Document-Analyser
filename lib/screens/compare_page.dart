@@ -3,6 +3,7 @@ import '../l10n/tr_text.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
+import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -27,6 +28,12 @@ class _ComparePageState extends State<ComparePage> {
       setState(() => error = 'One of the selected files is no longer available. Please re-import it.');
       return;
     }
+    if (!await UsageService.canUseDaily('ask')) {
+      if (mounted) setState(() => error = UsageService.dailyLimitMessage);
+      return;
+    }
+    await UsageService.recordDaily('ask');
+    if (!mounted) return;
     setState(() { busy = true; error = null; comparison = null; });
     try {
       final firstText = await DocumentTextExtractor.extract(first.path!, first.type);

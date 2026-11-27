@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
+import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -98,6 +99,12 @@ class _AssistantPageState extends State<AssistantPage> {
       _saveHistory();
       return;
     }
+    if (!await UsageService.canUseDaily('ask')) {
+      setState(() => error = UsageService.dailyLimitMessage);
+      return;
+    }
+    await UsageService.recordDaily('ask');
+    if (!mounted) return;
     setState(() {
       messages.add({'role': 'user', 'text': question});
       controller.clear();

@@ -50,6 +50,7 @@ class OpenRouterDocumentAI {
         ],
       }),
     ).timeout(const Duration(seconds: 90));
+    if (response.statusCode == 429) throw Exception('The AI service is busy or its daily limit is reached. Please try again in a few minutes.');
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('AI service returned ${response.statusCode}: ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
     }
@@ -137,6 +138,7 @@ class OpenRouterDocumentAI {
         });
       final response =
           await client.send(request).timeout(const Duration(seconds: 90));
+      if (response.statusCode == 429) throw Exception('The AI service is busy or its daily limit is reached. Please try again in a few minutes.');
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final body = await response.stream.bytesToString();
         throw Exception('AI service returned ${response.statusCode}: ${body.length > 500 ? body.substring(0, 500) : body}');
