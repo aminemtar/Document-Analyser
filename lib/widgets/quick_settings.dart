@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import '../l10n/l10n.dart';
 import '../l10n/tr_text.dart';
@@ -75,6 +76,11 @@ class ThemeToggleButton extends StatelessWidget {
       tooltip: label.tr,
       onPressed: () {
         HapticFeedback.selectionClick();
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null && box.hasSize) {
+          ThemeController.revealOrigin =
+              box.localToGlobal(box.size.center(Offset.zero));
+        }
         ThemeController.set(dark ? ThemeMode.light : ThemeMode.dark);
       },
       icon: AnimatedSwitcher(

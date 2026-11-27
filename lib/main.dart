@@ -41,7 +41,7 @@ class _DocuMindAppState extends State<DocuMindApp>
   final GlobalKey _appKey = GlobalKey();
   late final AnimationController _fade = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
+      duration: const Duration(milliseconds: 750),
       value: 0)
     ..addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
@@ -52,6 +52,8 @@ class _DocuMindAppState extends State<DocuMindApp>
       }
     });
   ui.Image? _snapshot;
+  bool _toDark = true;
+  Offset? _origin;
 
   /// Picture of the screen before the theme changes. It is faded out over the
   /// new theme, so the switch is a smooth cross-fade instead of a hard cut.
@@ -121,6 +123,9 @@ class _DocuMindAppState extends State<DocuMindApp>
     final dark = _resolveDark();
     if (dark == _dark) return;
     _captureOldFrame();
+    _toDark = dark;
+    _origin = ThemeController.revealOrigin;
+    ThemeController.revealOrigin = null;
     _dark = dark;
     AppPalette.dark = dark;
     setState(() {});
@@ -161,9 +166,14 @@ class _DocuMindAppState extends State<DocuMindApp>
       if (old != null)
         Positioned.fill(
             child: IgnorePointer(
-                child: FadeTransition(
-                    opacity: ReverseAnimation(_fade),
-                    child: RawImage(image: old, fit: BoxFit.fill)))),
+                child: AnimatedBuilder(
+                    animation: _fade,
+                    builder: (context, _) => CustomPaint(
+                        painter: _RevealPainter(
+                            image: old,
+                            progress: Curves.easeInOutCubic.transform(_fade.value),
+                            toDark: _toDark,
+                            origin: _origin))))),
     ]);
   }
 }
@@ -180,4 +190,74 @@ Future<void> _lockPortraitOnPhones() async {
       DeviceOrientation.portraitUp,
     ]);
   }
+}
+
+
+/// Draws the screen as it was before the theme change, with a circle cut out
+/// of it. Going to dark, the new theme grows out of the switch until it covers
+/// the whole screen. Going back to light, the dark area shrinks back into the
+/// switch until it disappears.
+class _RevealPainter extends CustomPainter {
+  final ui.Image image;
+  final double progress; // 0..1
+  final bool toDark;
+  final Offset? origin;
+  _RevealPainter(
+      {required this.image,
+      required this.progress,
+      required this.toDark,
+      required this.origin});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = origin ?? Offset(size.width - 40, 28);
+    final corners = [
+      Offset.zero,
+      Offset(size.width, 0),
+      Offset(0, size.height),
+      Offset(size.width, size.height),
+    ];
+    final maxRadius =
+        corners.map((c) => (c - center).distance).reduce((a, b) => a > b ? a : b);
+    final bounds = Offset.zero & size;
+    final path = Path();
+    if (toDark) {
+      // Old (light) screen everywhere except the growing circle.
+      path
+        ..fillType = PathFillType.evenOdd
+        ..addRect(bounds)
+        ..addOval(Rect.fromCircle(center: center, radius: maxRadius * progress));
+    } else {
+      // Old (dark) screen only inside a circle that shrinks into the switch.
+      path.addOval(
+          Rect.fromCircle(center: center, radius: maxRadius * (1 - progress)));
+    }
+    canvas.save();
+    canvas.clipPath(path);
+    canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        bounds,
+        Paint()..filterQuality = FilterQuality.medium);
+    canvas.restore();
+    // A thin light edge on the moving circle.
+    final radius = maxRadius * (toDark ? progress : 1 - progress);
+    if (progress > 0 && progress < 1 && radius > 1) {
+      canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..color = (toDark ? const Color(0xFF5B8CFF) : const Color(0xFFFFC857))
+                .withValues(alpha: .55 * (1 - (progress - .5).abs() * 2)));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RevealPainter old) =>
+      old.progress != progress ||
+      old.image != image ||
+      old.toDark != toDark ||
+      old.origin != origin;
 }
