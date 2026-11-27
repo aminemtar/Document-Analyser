@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import '../l10n/l10n.dart';
 import '../models/attention.dart';
 import '../models/doc_item.dart';
 
@@ -117,21 +118,21 @@ abstract final class ReminderService {
         final sameDay = at.day == event.when!.day;
         planned.add(_Planned(
             at,
-            '${sameDay ? 'Today' : 'Tomorrow'}: ${event.title}',
+            '${(sameDay ? 'Today' : 'Tomorrow').tr}: ${event.title}',
             event.doc.name,
             event.doc.path));
       }
     }
     planned.sort((a, b) => a.at.compareTo(b.at));
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: AndroidNotificationDetails(
         'deadlines',
-        'Document deadlines',
-        channelDescription: 'Reminders for dates found in your documents',
+        'Document deadlines'.tr,
+        channelDescription: 'Reminders for dates found in your documents'.tr,
         importance: Importance.high,
         priority: Priority.high,
       ),
-      iOS: DarwinNotificationDetails(),
+      iOS: const DarwinNotificationDetails(),
     );
     final chosen = planned.take(maxScheduledReminders).toList();
     for (var i = 0; i < chosen.length; i++) {
@@ -163,8 +164,8 @@ abstract final class ReminderService {
       NotificationDetails details, DateTime now) async {
     await _plugin.zonedSchedule(
       id: _digestId,
-      title: 'Your week in DocuMind',
-      body: 'Check upcoming dates and documents that need attention.',
+      title: 'Your week in DocuMind'.tr,
+      body: 'Check upcoming dates and documents that need attention.'.tr,
       scheduledDate: tz.TZDateTime.fromMillisecondsSinceEpoch(
           tz.UTC, nextWeeklyDigest(now).millisecondsSinceEpoch),
       notificationDetails: details,

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../theme/app_theme.dart';
 
 class _Slide {
@@ -49,7 +50,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(children: [
             Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: TextButton(
                     onPressed: last ? null : widget.onDone,
                     child: Text(last ? '' : 'Skip',
@@ -76,7 +77,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 borderRadius: BorderRadius.circular(38),
                                 boxShadow: [
                                   BoxShadow(
-                                      color: blue.withOpacity(.25),
+                                      color: blue.withValues(alpha: .25),
                                       blurRadius: 30,
                                       offset: const Offset(0, 14))
                                 ]),

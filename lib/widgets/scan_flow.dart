@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/scan_service.dart';
 import '../theme/app_theme.dart';

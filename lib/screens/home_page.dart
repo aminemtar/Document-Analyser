@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/attention_card.dart';
@@ -44,7 +45,7 @@ class HomePage extends StatelessWidget {
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                  color: blue.withOpacity(.18),
+                  color: blue.withValues(alpha: .18),
                   blurRadius: 25,
                   offset: const Offset(0, 12))
             ],
@@ -54,13 +55,13 @@ class HomePage extends StatelessWidget {
                 right: -15,
                 top: -25,
                 child: Icon(Icons.auto_awesome_rounded,
-                    size: 150, color: Colors.white.withOpacity(.08))),
+                    size: 150, color: Colors.white.withValues(alpha: .08))),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.14),
+                      color: Colors.white.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(30)),
                   child: const Text('YOUR AI DOCUMENT WORKSPACE',
                       style: TextStyle(
@@ -79,7 +80,7 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 10),
               Text('Summarize, discover key details and spot risks with AI.',
                   style: TextStyle(
-                      color: Colors.white.withOpacity(.78),
+                      color: Colors.white.withValues(alpha: .78),
                       fontSize: 14,
                       height: 1.5)),
               const SizedBox(height: 20),

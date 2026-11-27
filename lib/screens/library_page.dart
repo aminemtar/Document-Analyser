@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -79,7 +80,7 @@ class _LibraryPageState extends State<LibraryPage> {
       TextField(
           onChanged: (v) => setState(() => query = v),
           decoration: InputDecoration(
-              hintText: 'Search names and analyses...',
+              hintText: 'Search names and analyses...'.tr,
               prefixIcon: Icon(Icons.search_rounded, color: muted),
               filled: true,
               fillColor: AppColors.surface,
@@ -116,8 +117,8 @@ class _LibraryPageState extends State<LibraryPage> {
             direction: DismissDirection.endToStart,
             onDismissed: (_) => widget.onDelete(d),
             background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 22),
+                alignment: AlignmentDirectional.centerEnd,
+                padding: const EdgeInsetsDirectional.only(end: 22),
                 margin: const EdgeInsets.only(bottom: 9),
                 decoration: BoxDecoration(
                     color: AppColors.danger,

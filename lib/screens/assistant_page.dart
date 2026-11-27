@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
@@ -168,7 +169,7 @@ class _AssistantPageState extends State<AssistantPage> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         heading('AI assistant', 'Ask questions across your uploaded documents.',
             trailing: IconButton(
-                tooltip: 'Clear conversation',
+                tooltip: 'Clear conversation'.tr,
                 onPressed: busy ? null : _clearChat,
                 icon: Icon(Icons.delete_sweep_outlined, color: muted))),
         const SizedBox(height: 10),
@@ -189,7 +190,9 @@ class _AssistantPageState extends State<AssistantPage> {
           final m = messages[i];
           final user = m['role'] == 'user';
           return Align(
-            alignment: user ? Alignment.centerRight : Alignment.centerLeft,
+            alignment: user
+                ? AlignmentDirectional.centerEnd
+                : AlignmentDirectional.centerStart,
             child: Container(
               constraints: const BoxConstraints(maxWidth: 330),
               margin: const EdgeInsets.only(bottom: 12),
@@ -215,7 +218,7 @@ class _AssistantPageState extends State<AssistantPage> {
           enabled: !busy,
           onSubmitted: (_) => send(),
           decoration: InputDecoration(
-            hintText: 'Ask about your uploaded files…',
+            hintText: 'Ask about your uploaded files…'.tr,
             filled: true,
             fillColor: pale,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(17), borderSide: BorderSide.none),

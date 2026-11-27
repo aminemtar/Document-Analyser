@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../l10n/l10n.dart';
 
 /// Whether the dark palette is active.
 ///
@@ -86,7 +87,10 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: pale,
-      textTheme: GoogleFonts.interTextTheme(base.textTheme)
+      // Cairo draws Arabic well; Inter is used for English and French.
+      textTheme: (L10n.language.value == 'ar'
+              ? GoogleFonts.cairoTextTheme(base.textTheme)
+              : GoogleFonts.interTextTheme(base.textTheme))
           .apply(bodyColor: navy, displayColor: navy),
       appBarTheme: AppBarTheme(
         backgroundColor: pale,

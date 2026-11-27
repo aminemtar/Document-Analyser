@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
 
@@ -142,7 +143,7 @@ class DocumentTile extends StatelessWidget {
               width: 43,
               height: 47,
               decoration: BoxDecoration(
-                  color: color.withOpacity(.10),
+                  color: color.withValues(alpha: .10),
                   borderRadius: BorderRadius.circular(12)),
               child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +226,7 @@ class RiskLine extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 11),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-          color: color.withOpacity(.07),
+          color: color.withValues(alpha: .07),
           borderRadius: BorderRadius.circular(13)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(level.toUpperCase(),

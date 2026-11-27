@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import 'package:flutter/services.dart';
 import '../models/doc_item.dart';
 import '../services/document_text_extractor.dart';
@@ -184,11 +185,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 Expanded(child: Text('Analysis generated from document text',
                   style: TextStyle(color: navy, fontSize: 14, fontWeight: FontWeight.w800))),
                 IconButton(
-                  tooltip: 'Share analysis',
+                  tooltip: 'Share analysis'.tr,
                   onPressed: () => _shareSummary(doc, data),
                   icon: Icon(Icons.ios_share_rounded, color: blue, size: 20)),
                 IconButton(
-                  tooltip: 'Copy summary',
+                  tooltip: 'Copy summary'.tr,
                   onPressed: () => _copySummary(doc, data),
                   icon: Icon(Icons.copy_rounded, color: blue, size: 20)),
               ]),
@@ -262,7 +263,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            color: color.withOpacity(.07),
+            color: color.withValues(alpha: .07),
             borderRadius: BorderRadius.circular(14)),
         child: Row(children: [
           SizedBox(
@@ -274,7 +275,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         value: score / 100,
                         strokeWidth: 6,
                         color: color,
-                        backgroundColor: color.withOpacity(.15))),
+                        backgroundColor: color.withValues(alpha: .15))),
                 Text('$score',
                     style: TextStyle(
                         color: color, fontSize: 16, fontWeight: FontWeight.w800)),
@@ -379,7 +380,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
         child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-                color: color.withOpacity(.08),
+                color: color.withValues(alpha: .08),
                 borderRadius: BorderRadius.circular(12)),
             child: Column(children: [
               Text(value,
@@ -432,8 +433,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
   Widget _riskList(dynamic values) {
     final items = values is List ? values : const [];
-    if (items.isEmpty) return Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
-      style: TextStyle(color: muted, fontSize: 13, height: 1.5));
+    if (items.isEmpty) {
+      return Text('No risks were identified by the model. This is not a guarantee that the document is risk-free.',
+          style: TextStyle(color: muted, fontSize: 13, height: 1.5));
+    }
     return Column(children: items.map((v) {
       final item = v is Map ? v : <String, dynamic>{'title': v.toString()};
       final level = (item['level'] ?? 'Review').toString();

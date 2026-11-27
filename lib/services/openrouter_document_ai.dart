@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../l10n/l10n.dart';
 import 'package:http/http.dart' as http;
 
 /// The text carried by one line of a streamed (server-sent events) reply, or
@@ -77,7 +78,7 @@ class OpenRouterDocumentAI {
     required String text,
   }) async {
     final content = await _complete(
-      system: 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string), review_level (integer 0-100 showing how much attention the document needs, based only on the risks you found), important_dates (array of objects with label, date, note; date is YYYY-MM-DD only when an exact date is written in the text, otherwise null), amounts (array of objects with label and value, value exactly as written in the text), suggested_questions (array of 3 short questions a reader could ask about this document). Separate factual observations from recommendations. Do not present legal conclusions as professional advice.',
+      system: 'You are a careful document analyst. Only report facts supported by the supplied text. Never invent names, dates, amounts, clauses or risks. If something is absent or unclear, say so. Return valid JSON only with keys: document_type (string), summary (string), key_details (array of strings), risks (array of objects with level, title, detail), action_items (array of strings), confidence_notes (string), review_level (integer 0-100 showing how much attention the document needs, based only on the risks you found), important_dates (array of objects with label, date, note; date is YYYY-MM-DD only when an exact date is written in the text, otherwise null), amounts (array of objects with label and value, value exactly as written in the text), suggested_questions (array of 3 short questions a reader could ask about this document). Separate factual observations from recommendations. Do not present legal conclusions as professional advice. Write every human-readable text value in ${L10n.aiLanguageName} (keep the JSON keys in English and quote document text as written).',
       user: 'Analyze this real uploaded document. Filename: $fileName. Format: $fileType.\n\nDOCUMENT TEXT:\n$text',
     );
     return _decodeJson(content);
@@ -91,7 +92,7 @@ class OpenRouterDocumentAI {
       'FILE: ${d['name']}\nCONTENT:\n${d['text']}'
     ).join('\n\n--- NEXT DOCUMENT ---\n\n');
     return _complete(
-      system: 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful.',
+      system: 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful. Reply in the language of the question; if it is unclear, reply in ${L10n.aiLanguageName}.',
       user: 'QUESTION:\n$question\n\nUPLOADED DOCUMENTS:\n$context',
       temperature: 0.1,
     );
@@ -126,7 +127,7 @@ class OpenRouterDocumentAI {
           'messages': [
             {
               'role': 'system',
-              'content': 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful.'
+              'content': 'You are DocuMind, a precise assistant that answers questions using only the provided uploaded document text. Cite the source filename when possible. If the answer is not present in the supplied files, say clearly that the uploaded documents do not contain enough information. Never invent facts. Be concise but useful. Reply in the language of the question; if it is unclear, reply in ${L10n.aiLanguageName}.'
             },
             {
               'role': 'user',
@@ -158,7 +159,7 @@ class OpenRouterDocumentAI {
     required String secondText,
   }) async {
     final content = await _complete(
-      system: 'You compare two real documents carefully. Only report differences supported by the supplied text. Do not assume that missing text means a clause was removed unless the comparison supports that conclusion. Return valid JSON only with keys: summary (string), similarities (array of strings), differences (array of objects with topic, document_a, document_b, significance), changed_dates_or_amounts (array of strings), review_points (array of strings). State when a value is not found. Do not give professional legal advice.',
+      system: 'You compare two real documents carefully. Only report differences supported by the supplied text. Do not assume that missing text means a clause was removed unless the comparison supports that conclusion. Return valid JSON only with keys: summary (string), similarities (array of strings), differences (array of objects with topic, document_a, document_b, significance), changed_dates_or_amounts (array of strings), review_points (array of strings). State when a value is not found. Do not give professional legal advice. Write every human-readable text value in ${L10n.aiLanguageName} (keep the JSON keys in English).',
       user: 'Compare these two uploaded documents.\n\nDOCUMENT A: $firstName\n$firstText\n\nDOCUMENT B: $secondName\n$secondText',
     );
     return _decodeJson(content);

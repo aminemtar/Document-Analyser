@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../services/ad_service.dart';
 import '../services/billing_service.dart';
 import '../services/usage_service.dart';
@@ -160,7 +161,7 @@ class _PaywallPageState extends State<PaywallPage> {
     return Scaffold(
       appBar: AppBar(
           leading: IconButton(
-              tooltip: 'Close',
+              tooltip: 'Close'.tr,
               icon: const Icon(Icons.close_rounded),
               onPressed: () => Navigator.of(context).pop())),
       body: SafeArea(

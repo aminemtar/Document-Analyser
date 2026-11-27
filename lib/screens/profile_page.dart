@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_controller.dart';
 import '../widgets/common.dart';
 import '../services/ad_service.dart';
+import '../l10n/locale_controller.dart';
 import 'paywall_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -49,11 +51,7 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 14),
         const _PlanCard(),
         sectionTitle('Preferences'),
-        const SettingsRow(
-            icon: Icons.language_rounded,
-            title: 'Language',
-            subtitle: 'English. Scanning cannot read Arabic yet',
-            trailing: 'EN'),
+        const _LanguageRow(),
         Card(
             margin: const EdgeInsets.only(bottom: 9),
             child: Padding(
@@ -214,7 +212,7 @@ class _PlanCardState extends State<_PlanCard> {
                     Text(
                         isPro
                             ? 'Unlimited analyses'
-                            : '$left ${left == 1 ? 'analysis' : 'analyses'} left (${total} free each month)',
+                            : '$left ${left == 1 ? 'analysis' : 'analyses'} left ($total free each month)',
                         style: const TextStyle(
                             color: Color(0xFFDCE6FF), fontSize: 13)),
                   ])),
@@ -259,4 +257,62 @@ class _AdPrivacyRowState extends State<_AdPrivacyRow> {
                 style: TextStyle(color: muted, fontSize: 12)),
             onTap: AdService.showPrivacyOptions));
   }
+}
+
+/// Language picker: system default, English, Français or العربية.
+class _LanguageRow extends StatelessWidget {
+  const _LanguageRow();
+
+  Future<void> _pick(BuildContext context) async {
+    final current = LocaleController.choice.value;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('Choose language',
+                      style: TextStyle(
+                          color: navy,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17)))),
+          for (final code in ['system', 'en', 'fr', 'ar'])
+            ListTile(
+                title: Text(code == 'system' ? 'System'.tr : languageNames[code]!,
+                    style: TextStyle(color: navy, fontWeight: FontWeight.w600)),
+                trailing: code == current
+                    ? Icon(Icons.check_rounded, color: blue)
+                    : null,
+                onTap: () => Navigator.of(sheetContext).pop(code)),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (picked != null) await LocaleController.set(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<String>(
+      valueListenable: LocaleController.choice,
+      builder: (context, choice, _) {
+        final name = choice == 'system' ? 'System'.tr : languageNames[choice]!;
+        return Card(
+            margin: const EdgeInsets.only(bottom: 9),
+            child: ListTile(
+                leading: Icon(Icons.language_rounded, color: blue),
+                title: Text('Language',
+                    style: TextStyle(
+                        color: navy,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
+                subtitle: Text(
+                    '$name. ${'Scanning cannot read Arabic yet'.tr}',
+                    style: TextStyle(color: muted, fontSize: 12)),
+                trailing: Text(L10n.language.value.toUpperCase(),
+                    style: TextStyle(color: muted, fontSize: 14)),
+                onTap: () => _pick(context)));
+      });
 }

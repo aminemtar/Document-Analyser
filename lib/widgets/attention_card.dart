@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 import '../models/attention.dart';
 import '../models/doc_item.dart';
 import '../theme/app_theme.dart';
@@ -51,7 +52,7 @@ class AttentionCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                        color: color.withOpacity(.1),
+                        color: color.withValues(alpha: .1),
                         borderRadius: BorderRadius.circular(10)),
                     child: Icon(
                         dated

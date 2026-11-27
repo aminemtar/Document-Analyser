@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'l10n/tr_text.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -463,7 +464,7 @@ class _AppShellState extends State<AppShell> {
       content: Text('${doc.name} deleted'),
       behavior: SnackBarBehavior.floating,
       action: SnackBarAction(
-        label: 'Undo',
+        label: 'Undo'.tr,
         onPressed: () {
           if (!mounted) return;
           setState(() => documents.insert(index.clamp(0, documents.length), doc));
@@ -560,21 +561,17 @@ class _AppShellState extends State<AppShell> {
           automaticallyImplyLeading: false,
           leading: isSubPage
               ? IconButton(
-                  tooltip: 'Back',
+                  tooltip: 'Back'.tr,
                   onPressed: () =>
                       _goTo(selected == Pages.analyze ? Pages.library : Pages.home),
                   icon: const Icon(Icons.arrow_back_rounded))
               : null,
           title: Row(children: [
-            Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF477BFF), Color(0xFF2147D8)]),
-                    borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.auto_awesome_rounded,
-                    color: Colors.white, size: 20)),
+            // The app icon itself, not a generic symbol.
+            ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset('assets/icon/icon.png',
+                    width: 36, height: 36, fit: BoxFit.cover)),
             const SizedBox(width: 10),
             // One flexible text, so a small screen or a large text setting
             // shortens the title instead of overflowing the app bar.
@@ -617,23 +614,23 @@ class _AppShellState extends State<AppShell> {
           height: 70,
           backgroundColor: AppColors.surface,
           indicatorColor: AppColors.surfaceTint,
-          destinations: const [
+          destinations: [
             NavigationDestination(
                 icon: Icon(Icons.grid_view_outlined),
                 selectedIcon: Icon(Icons.grid_view_rounded),
-                label: 'Home'),
+                label: 'Home'.tr),
             NavigationDestination(
                 icon: Icon(Icons.folder_copy_outlined),
                 selectedIcon: Icon(Icons.folder_copy_rounded),
-                label: 'Library'),
+                label: 'Library'.tr),
             NavigationDestination(
                 icon: Icon(Icons.auto_awesome_outlined),
                 selectedIcon: Icon(Icons.auto_awesome_rounded),
-                label: 'Assistant'),
+                label: 'Assistant'.tr),
             NavigationDestination(
                 icon: Icon(Icons.person_outline_rounded),
                 selectedIcon: Icon(Icons.person_rounded),
-                label: 'Profile'),
+                label: 'Profile'.tr),
           ],
         ),
         ]),

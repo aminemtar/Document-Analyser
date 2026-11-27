@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:documind_ai/l10n/l10n.dart';
+import 'package:documind_ai/l10n/locale_controller.dart';
 import 'package:documind_ai/main.dart';
 import 'package:documind_ai/theme/app_theme.dart';
 import 'package:documind_ai/theme/theme_controller.dart';
@@ -9,7 +11,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // The appearance choice is global, so every test starts from "System".
-  setUp(() => ThemeController.mode.value = ThemeMode.system);
+  setUp(() {
+    ThemeController.mode.value = ThemeMode.system;
+    LocaleController.choice.value = 'system';
+    L10n.language.value = 'en';
+  });
 
   testWidgets('dark mode repaints the app and keeps the current page',
       (tester) async {
@@ -45,6 +51,35 @@ void main() {
     await tester.tap(find.text('System'));
     await tester.pumpAndSettle();
     expect(AppPalette.dark, isFalse);
+  });
+
+  testWidgets('French and Arabic switch the interface, Arabic reads right to left',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+    expect(find.text('Library'), findsWidgets);
+
+    LocaleController.choice.value = 'fr';
+    await tester.pumpAndSettle();
+    expect(find.text('Bibliothèque'), findsWidgets);
+    expect(find.text('Library'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    LocaleController.choice.value = 'ar';
+    await tester.pumpAndSettle();
+    expect(find.text('المكتبة'), findsWidgets);
+    expect(
+        Directionality.of(tester.element(find.byType(Scaffold).first)),
+        TextDirection.rtl);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('الملف الشخصي'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 
   test('palette tokens switch between the light and dark sets', () {

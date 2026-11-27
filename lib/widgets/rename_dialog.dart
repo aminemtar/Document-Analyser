@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/tr_text.dart';
 
 /// Asks for a new document name. Returns the trimmed name, or null when the
 /// user cancels, dismisses the dialog or leaves the field empty.
@@ -37,7 +38,7 @@ class _RenameDialogState extends State<_RenameDialog> {
           autofocus: true,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(labelText: 'Name'),
+          decoration: InputDecoration(labelText: 'Name'.tr),
         ),
         actions: [
           TextButton(
