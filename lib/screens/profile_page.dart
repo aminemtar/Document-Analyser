@@ -6,6 +6,7 @@ import '../theme/theme_controller.dart';
 import '../widgets/common.dart';
 import '../services/ad_service.dart';
 import '../l10n/locale_controller.dart';
+import '../widgets/language_sheet.dart';
 import 'paywall_page.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -263,37 +264,6 @@ class _AdPrivacyRowState extends State<_AdPrivacyRow> {
 class _LanguageRow extends StatelessWidget {
   const _LanguageRow();
 
-  Future<void> _pick(BuildContext context) async {
-    final current = LocaleController.choice.value;
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text('Choose language',
-                      style: TextStyle(
-                          color: navy,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 17)))),
-          for (final code in ['system', 'en', 'fr', 'ar'])
-            ListTile(
-                title: Text(code == 'system' ? 'System'.tr : languageNames[code]!,
-                    style: TextStyle(color: navy, fontWeight: FontWeight.w600)),
-                trailing: code == current
-                    ? Icon(Icons.check_rounded, color: blue)
-                    : null,
-                onTap: () => Navigator.of(sheetContext).pop(code)),
-          const SizedBox(height: 8),
-        ]),
-      ),
-    );
-    if (picked != null) await LocaleController.set(picked);
-  }
-
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<String>(
       valueListenable: LocaleController.choice,
@@ -313,6 +283,6 @@ class _LanguageRow extends StatelessWidget {
                     style: TextStyle(color: muted, fontSize: 12)),
                 trailing: Text(L10n.language.value.toUpperCase(),
                     style: TextStyle(color: muted, fontSize: 14)),
-                onTap: () => _pick(context)));
+                onTap: () => showLanguageSheet(context)));
       });
 }

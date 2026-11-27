@@ -23,6 +23,7 @@ import 'screens/onboarding_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
 import 'widgets/ad_banner.dart';
+import 'widgets/quick_settings.dart';
 import 'widgets/scan_flow.dart';
 
 /// Page indexes. The bottom bar only shows four of them; Analyze, Insights
@@ -587,6 +588,7 @@ class _AppShellState extends State<AppShell> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis)),
           ]),
+          actions: quickSettingsActions(context),
         ),
         body: loading
             ? const Center(child: CircularProgressIndicator())

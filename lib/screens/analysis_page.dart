@@ -8,6 +8,7 @@ import '../services/openrouter_document_ai.dart';
 import '../services/usage_service.dart';
 import '../services/ad_service.dart';
 import '../services/export_service.dart';
+import '../widgets/premium_tabs.dart';
 import 'paywall_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -115,7 +116,6 @@ class _AnalysisPageState extends State<AnalysisPage> {
       try { result = jsonDecode(doc.analysisJson!) as Map<String, dynamic>; } catch (_) {}
     }
     final data = result;
-    final tabs = ['Overview', 'Key details', 'Risks', 'Dates', 'Actions'];
     return PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       heading('Document analysis', 'Extract facts, understand obligations and identify risks.'),
       const SizedBox(height: 18),
@@ -196,11 +196,8 @@ class _AnalysisPageState extends State<AnalysisPage> {
               const SizedBox(height: 8),
               _countsRow(data),
               const SizedBox(height: 13),
-              Wrap(spacing: 5, children: List.generate(tabs.length, (i) => ChoiceChip(
-                label: Text(tabs[i]), selected: tab == i, onSelected: (_) => setState(() => tab = i),
-                selectedColor: AppColors.accentSoft,
-                labelStyle: TextStyle(fontSize: 12, color: tab == i ? blue : muted, fontWeight: FontWeight.w700)))),
-              const SizedBox(height: 16),
+              PremiumTabBar(tabs: _tabsFor(data), selected: tab, onChanged: (i) => setState(() => tab = i)),
+              const SizedBox(height: 18),
               if (tab == 0) ...[
                 _reviewGauge(data['review_level']),
                 Text((data['document_type'] ?? 'Document').toString().toUpperCase(),
@@ -228,7 +225,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
               ] else if (tab == 3) ...[
                 _datesView(data)
               ] else ...[
-                _stringList(data['action_items'], empty: 'No action items were identified.')
+                _stringList(data['action_items'], empty: 'No action items were identified.', checks: true)
               ]
             ]))
         ] else if (!busy && error == null) ...[
@@ -370,31 +367,83 @@ class _AnalysisPageState extends State<AnalysisPage> {
     ]);
   }
 
+  /// The tabs, with a count on Risks and Actions while they are not selected.
+  List<PremiumTab> _tabsFor(Map<String, dynamic> data) {
+    final risks = _listOf(data['risks']);
+    final high = _highRiskCount(risks);
+    return [
+      const PremiumTab(Icons.dashboard_outlined, 'Overview'),
+      const PremiumTab(Icons.fact_check_outlined, 'Key details'),
+      PremiumTab(Icons.shield_outlined, 'Risks',
+          badge: risks.length,
+          badgeColor: high > 0 ? AppColors.danger : AppColors.warning),
+      const PremiumTab(Icons.event_outlined, 'Dates'),
+      PremiumTab(Icons.task_alt_rounded, 'Actions',
+          badge: _listOf(data['action_items']).length),
+    ];
+  }
+
+  int _highRiskCount(List risks) => risks
+      .where((r) =>
+          r is Map && (r['level'] ?? '').toString().toLowerCase().contains('high'))
+      .length;
+
+  /// Three summary tiles. Tapping one jumps to its tab.
   Widget _countsRow(Map<String, dynamic> data) {
     final risks = _listOf(data['risks']);
-    final highRisks = risks
-        .where((r) =>
-            r is Map && (r['level'] ?? '').toString().toLowerCase().contains('high'))
-        .length;
-    Widget chip(String value, String label, Color color) => Expanded(
-        child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(12)),
-            child: Column(children: [
-              Text(value,
-                  style: TextStyle(
-                      color: color, fontSize: 18, fontWeight: FontWeight.w800)),
-              Text(label, style: TextStyle(color: muted, fontSize: 12)),
-            ])));
+    final highRisks = _highRiskCount(risks);
+    final riskColor = highRisks > 0
+        ? AppColors.danger
+        : risks.isNotEmpty
+            ? AppColors.warning
+            : AppColors.success;
+    Widget tile(IconData icon, int value, String label, Color color, int target) =>
+        Expanded(
+            child: Material(
+                color: color.withValues(alpha: .09),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: BorderSide(color: color.withValues(alpha: .22))),
+                child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => setState(() => tab = target),
+                    child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                      color: color.withValues(alpha: .16),
+                                      shape: BoxShape.circle),
+                                  child: Icon(icon, size: 17, color: color)),
+                              const SizedBox(height: 10),
+                              Text('$value',
+                                  style: TextStyle(
+                                      color: navy,
+                                      fontSize: 26,
+                                      height: 1,
+                                      fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 4),
+                              Text(label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: muted,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600)),
+                            ])))));
     return Row(children: [
-      chip('${_listOf(data['key_details']).length}', 'Details', blue),
-      const SizedBox(width: 8),
-      chip('${risks.length}', highRisks > 0 ? '$highRisks high risk' : 'Risks',
-          highRisks > 0 ? AppColors.danger : blue),
-      const SizedBox(width: 8),
-      chip('${_listOf(data['action_items']).length}', 'Actions', blue),
+      tile(Icons.fact_check_outlined, _listOf(data['key_details']).length,
+          'Details', blue, 1),
+      const SizedBox(width: 9),
+      tile(Icons.shield_outlined, risks.length,
+          highRisks > 0 ? '$highRisks high risk' : 'Risks', riskColor, 2),
+      const SizedBox(width: 9),
+      tile(Icons.task_alt_rounded, _listOf(data['action_items']).length,
+          'Actions', AppColors.success, 4),
     ]);
   }
 
@@ -417,18 +466,43 @@ class _AnalysisPageState extends State<AnalysisPage> {
     }
   }
 
-  Widget _stringList(dynamic values, {required String empty}) {
+  Widget _stringList(dynamic values, {required String empty, bool checks = false}) {
     final items = values is List ? values : const [];
     if (items.isEmpty) return Text(empty, style: TextStyle(color: muted, fontSize: 13));
-    return Column(children: items.map((v) => Container(
-      width: double.infinity, margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: pale, borderRadius: BorderRadius.circular(12)),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(Icons.check_circle_outline_rounded, color: blue, size: 16),
-        const SizedBox(width: 8), Expanded(child: Text(v.toString(),
-          style: TextStyle(color: navy, fontSize: 13, height: 1.5)))
-      ])
-    )).toList());
+    return Column(children: [
+      for (var i = 0; i < items.length; i++)
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: AppColors.heroGradient),
+                    shape: BoxShape.circle),
+                child: checks
+                    ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                    : Text('${i + 1}',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(items[i].toString(),
+                        style: TextStyle(color: navy, fontSize: 13.5, height: 1.5)))),
+          ]),
+        ),
+    ]);
   }
 
   Widget _riskList(dynamic values) {

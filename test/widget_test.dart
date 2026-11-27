@@ -82,6 +82,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('theme and language are one tap away in the app bar',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+    expect(AppPalette.dark, isFalse);
+
+    await tester.tap(find.byTooltip('Switch to dark mode'));
+    await tester.pumpAndSettle();
+    expect(AppPalette.dark, isTrue);
+    expect(find.byTooltip('Switch to light mode'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Language'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose language'), findsOneWidget);
+    await tester.tap(find.text('Français'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bibliothèque'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   test('palette tokens switch between the light and dark sets', () {
     addTearDown(() => AppPalette.dark = false);
     AppPalette.dark = false;

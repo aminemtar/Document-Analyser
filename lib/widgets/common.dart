@@ -224,24 +224,49 @@ class RiskLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
       margin: const EdgeInsets.only(bottom: 11),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-          color: color.withValues(alpha: .07),
-          borderRadius: BorderRadius.circular(13)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(level.toUpperCase(),
-            style: TextStyle(
-                fontSize: 11,
-                letterSpacing: .8,
-                fontWeight: FontWeight.w900,
-                color: color)),
-        const SizedBox(height: 5),
-        Text(title,
-            style: TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 14, color: navy)),
-        const SizedBox(height: 4),
-        Text(detail,
-            style: TextStyle(fontSize: 12, color: muted, height: 1.45))
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border)),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(19, 13, 13, 13),
+            child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(
+                              color: color.withValues(alpha: .14),
+                              borderRadius: BorderRadius.circular(20)),
+                          child: Text(level.toUpperCase(),
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  letterSpacing: .8,
+                                  fontWeight: FontWeight.w900,
+                                  color: color))),
+                      const SizedBox(height: 8),
+                      Text(title,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: navy)),
+                      if (detail.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(detail,
+                            style: TextStyle(
+                                fontSize: 12.5, color: muted, height: 1.5)),
+                      ],
+                    ]))),
+        PositionedDirectional(
+            start: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(width: 5, color: color)),
       ]));
 }
 
