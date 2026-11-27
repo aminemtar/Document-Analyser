@@ -9,7 +9,7 @@ import '../services/usage_service.dart';
 import '../services/ad_service.dart';
 import '../services/export_service.dart';
 import '../widgets/premium_tabs.dart';
-import 'paywall_page.dart';
+import 'more_analyses_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 
@@ -84,7 +84,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
     if (!await UsageService.canAnalyze()) {
       if (!mounted) return;
       await Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => const PaywallPage()));
+          .push(MaterialPageRoute(builder: (_) => const MoreAnalysesPage()));
       return;
     }
     if (!await UsageService.canUseDaily('analysis')) {

@@ -161,7 +161,7 @@ void main() {
   testWidgets('profile shows the free plan and the reminders switch',
       (tester) async {
     SharedPreferences.setMockInitialValues({'onboarded': true});
-    // Tall screen so the whole paywall is built (it is a lazy list).
+    // Tall screen so the whole page is built (it is a lazy list).
     tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -176,13 +176,12 @@ void main() {
     expect(find.text('Back up analyses'), findsOneWidget);
     expect(find.text('Date reminders'), findsOneWidget);
 
-    await tester.tap(find.text('Upgrade'));
+    await tester.tap(find.text('Get more'));
     await tester.pumpAndSettle();
-    expect(find.text('DocuMind Pro'), findsOneWidget);
-    // No store on the test machine, so the button says so instead of
-    // pretending to charge anything.
-    expect(find.text('Available on Android and iOS'), findsOneWidget);
-    expect(find.text('No ads'), findsOneWidget);
+    expect(find.text('Get more analyses'), findsOneWidget);
+    // No ads on the test machine, so the button says so.
+    expect(find.text('No ad available right now. Try again soon.'),
+        findsOneWidget);
   });
 
   testWidgets('Add document offers a file, a camera scan and photos',

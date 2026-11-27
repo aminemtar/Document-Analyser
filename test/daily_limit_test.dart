@@ -16,14 +16,4 @@ void main() {
         await UsageService.canUseDaily('ask', now: day.add(const Duration(days: 1))),
         isTrue);
   });
-
-  test('pro users have higher caps, analyses capped per day', () async {
-    await UsageService.setPro(true);
-    final day = DateTime(2026, 11, 27);
-    for (var i = 0; i < UsageService.proDailyAnalyses; i++) {
-      await UsageService.recordDaily('analysis', now: day);
-    }
-    expect(await UsageService.canUseDaily('analysis', now: day), isFalse);
-    expect(await UsageService.canUseDaily('ask', now: day), isTrue);
-  });
 }

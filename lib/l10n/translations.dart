@@ -221,6 +221,10 @@ const Map<String, String> frTexts = {
   "Tap to open": "Touchez pour ouvrir",
   "The AI service is busy or its daily limit is reached. Please try again in a few minutes.": "Le service d’IA est occupé ou sa limite quotidienne est atteinte. Réessayez dans quelques minutes.",
   "Daily limit reached for this feature. Please come back tomorrow.": "Limite quotidienne atteinte pour cette fonction. Revenez demain.",
+  "Get more": "Obtenir plus",
+  "No ad available right now. Try again soon.": "Aucune publicité disponible pour le moment. Réessayez bientôt.",
+  "Watch a short ad to earn one extra analysis, or come back next month for a fresh allowance.": "Regardez une courte publicité pour gagner une analyse de plus, ou revenez le mois prochain pour un nouveau quota.",
+  "Get more analyses": "Obtenir plus d’analyses",
 };
 
 /// English text -> Arabic.
@@ -443,6 +447,10 @@ const Map<String, String> arTexts = {
   "Tap to open": "اضغط للفتح",
   "The AI service is busy or its daily limit is reached. Please try again in a few minutes.": "خدمة الذكاء الاصطناعي مشغولة أو بلغت حدها اليومي. حاول مجددًا بعد بضع دقائق.",
   "Daily limit reached for this feature. Please come back tomorrow.": "تم بلوغ الحد اليومي لهذه الميزة. عد غدًا من فضلك.",
+  "Get more": "المزيد",
+  "No ad available right now. Try again soon.": "لا يوجد إعلان متاح الآن. حاول مجددًا قريبًا.",
+  "Watch a short ad to earn one extra analysis, or come back next month for a fresh allowance.": "شاهد إعلانًا قصيرًا لتربح تحليلًا إضافيًا، أو عد الشهر القادم لحصة جديدة.",
+  "Get more analyses": "احصل على المزيد من التحليلات",
 };
 
 /// Texts with numbers or names inside: (pattern, French, Arabic).

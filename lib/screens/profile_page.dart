@@ -7,7 +7,7 @@ import '../widgets/common.dart';
 import '../services/ad_service.dart';
 import '../l10n/locale_controller.dart';
 import '../widgets/language_sheet.dart';
-import 'paywall_page.dart';
+import 'more_analyses_page.dart';
 
 class ProfilePage extends StatelessWidget {
   final bool remindersEnabled;
@@ -150,7 +150,7 @@ class ProfilePage extends StatelessWidget {
 }
 
 /// Shows the current plan and what is left of the free allowance. Tapping it
-/// opens the paywall and refreshes when the user comes back.
+/// opens the "get more analyses" page and refreshes when the user comes back.
 class _PlanCard extends StatefulWidget {
   const _PlanCard();
   @override
@@ -158,7 +158,6 @@ class _PlanCard extends StatefulWidget {
 }
 
 class _PlanCardState extends State<_PlanCard> {
-  bool isPro = false;
   int left = UsageService.freeMonthlyAnalyses;
 
   @override
@@ -168,11 +167,9 @@ class _PlanCardState extends State<_PlanCard> {
   }
 
   Future<void> _refresh() async {
-    final pro = await UsageService.isPro();
     final remaining = await UsageService.remaining();
     if (mounted) {
       setState(() {
-        isPro = pro;
         left = remaining;
       });
     }
@@ -180,7 +177,7 @@ class _PlanCardState extends State<_PlanCard> {
 
   Future<void> _open() async {
     await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const PaywallPage()));
+        .push(MaterialPageRoute(builder: (_) => const MoreAnalysesPage()));
     await _refresh();
   }
 
@@ -197,27 +194,25 @@ class _PlanCardState extends State<_PlanCard> {
                 gradient: const LinearGradient(colors: AppColors.heroGradient),
                 borderRadius: BorderRadius.circular(AppRadius.md)),
             child: Row(children: [
-              const Icon(Icons.workspace_premium_rounded,
+              const Icon(Icons.play_circle_fill_rounded,
                   color: Colors.white, size: 28),
               const SizedBox(width: 12),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text(isPro ? 'Pro plan' : 'Free plan',
+                    Text('Free plan',
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w800)),
                     const SizedBox(height: 2),
                     Text(
-                        isPro
-                            ? 'Unlimited analyses'
-                            : '$left ${left == 1 ? 'analysis' : 'analyses'} left ($total free each month)',
+                        '$left ${left == 1 ? 'analysis' : 'analyses'} left ($total free each month)',
                         style: const TextStyle(
                             color: Color(0xFFDCE6FF), fontSize: 13)),
                   ])),
-              Text(isPro ? 'Manage' : 'Upgrade',
+              Text('Get more',
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w800)),
               const Icon(Icons.chevron_right_rounded, color: Colors.white),

@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
 import '../services/ad_service.dart';
-import '../services/usage_service.dart';
 
 /// A small banner shown to free users. Takes no space until an ad has
-/// loaded, in tests, on unsupported platforms, and for Pro users.
+/// loaded, in tests, on unsupported platforms.
 class AdBanner extends StatefulWidget {
   const AdBanner({super.key});
   @override
@@ -20,19 +19,7 @@ class _AdBannerState extends State<AdBanner> {
   void initState() {
     super.initState();
     AdService.ready.addListener(_maybeLoad);
-    UsageService.proNotifier.addListener(_onPlanChanged);
     _maybeLoad();
-  }
-
-  void _onPlanChanged() {
-    if (UsageService.proNotifier.value) {
-      _ad?.dispose();
-      _ad = null;
-      _loaded = false;
-    } else {
-      _maybeLoad();
-    }
-    if (mounted) setState(() {});
   }
 
   void _maybeLoad() {
@@ -63,7 +50,6 @@ class _AdBannerState extends State<AdBanner> {
   @override
   void dispose() {
     AdService.ready.removeListener(_maybeLoad);
-    UsageService.proNotifier.removeListener(_onPlanChanged);
     _ad?.dispose();
     super.dispose();
   }
@@ -71,7 +57,7 @@ class _AdBannerState extends State<AdBanner> {
   @override
   Widget build(BuildContext context) {
     final ad = _ad;
-    if (ad == null || !_loaded || UsageService.proNotifier.value) {
+    if (ad == null || !_loaded) {
       return const SizedBox.shrink();
     }
     return SizedBox(

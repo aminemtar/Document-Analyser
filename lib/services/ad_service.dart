@@ -3,7 +3,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
-import 'usage_service.dart';
 
 /// Whether an interstitial should be shown now. Pure, so it can be tested:
 /// at most one every [minGap], and only after [every] completed analyses.
@@ -21,7 +20,7 @@ bool shouldShowInterstitial({
 
 /// AdMob: consent form, banner, interstitial and rewarded ads.
 ///
-/// Everything here is a no-op on unsupported platforms, in tests, for Pro
+/// Everything here is a no-op on unsupported platforms, in tests, 
 /// users, and when ads fail to load, so the app never depends on an ad.
 abstract final class AdService {
   /// True once the Mobile Ads SDK is initialized and ads may be requested.
@@ -41,7 +40,7 @@ abstract final class AdService {
       !Platform.environment.containsKey('FLUTTER_TEST');
 
   /// Ads are shown only to free users.
-  static bool get adsAllowed => supported && !UsageService.proNotifier.value;
+  static bool get adsAllowed => supported;
 
   static Future<void> init() async {
     if (!supported) return;
@@ -123,7 +122,7 @@ abstract final class AdService {
   }
 
   /// Call after each successful analysis. Shows a full-screen ad at a natural
-  /// break, not too often, and never to Pro users.
+  /// break, not too often, and for example after a finished analysis.
   static void onAnalysisCompleted() {
     if (!adsAllowed || !ready.value) return;
     _analysesSinceAd++;

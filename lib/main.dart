@@ -11,8 +11,6 @@ import 'app_shell.dart';
 import 'l10n/l10n.dart';
 import 'l10n/locale_controller.dart';
 import 'services/ad_service.dart';
-import 'services/billing_service.dart';
-import 'services/usage_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 
@@ -26,10 +24,8 @@ void main() async {
   }
   await ThemeController.load();
   await LocaleController.load();
-  await UsageService.isPro();
   runApp(const DocuMindApp());
-  // Store and ads start after the first frame so they never delay launch.
-  unawaited(BillingService.init());
+  // Ads start after the first frame so they never delay launch.
   unawaited(AdService.init());
 }
 

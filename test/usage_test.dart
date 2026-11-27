@@ -25,14 +25,4 @@ void main() {
     expect(await UsageService.remaining(now: july),
         UsageService.freeMonthlyAnalyses);
   });
-
-  test('Pro is never blocked', () async {
-    for (var i = 0; i < 5; i++) {
-      await UsageService.recordAnalysis(now: june);
-    }
-    await UsageService.setPro(true);
-    expect(await UsageService.canAnalyze(now: june), isTrue);
-    await UsageService.setPro(false);
-    expect(await UsageService.canAnalyze(now: june), isFalse);
-  });
 }

@@ -655,7 +655,7 @@ class _AppShellState extends State<AppShell> {
               ),
         bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
           // Banner ads only on browsing screens, never while reading results
-          // or chatting, and never for Pro users.
+          // or chatting.
           if (selected == Pages.home || selected == Pages.library)
             const AdBanner(),
           if (!wide)
