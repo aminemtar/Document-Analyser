@@ -11,6 +11,7 @@ import 'services/document_text_extractor.dart';
 import 'services/export_service.dart';
 import 'services/reminder_service.dart';
 import 'services/scan_service.dart';
+import 'services/share_intent_service.dart';
 import 'screens/analysis_page.dart';
 import 'screens/assistant_page.dart';
 import 'screens/compare_page.dart';
@@ -70,12 +71,14 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     ReminderService.tapped.addListener(_onReminderTapped);
+    ShareIntentService.listen(_importShared);
     _loadDocuments();
   }
 
   @override
   void dispose() {
     ReminderService.tapped.removeListener(_onReminderTapped);
+    ShareIntentService.stop();
     super.dispose();
   }
 
@@ -115,6 +118,8 @@ class _AppShellState extends State<AppShell> {
     remindersEnabled = prefs.getBool(ReminderService.prefsKey) ?? false;
     if (mounted) setState(() => loading = false);
     await _syncReminders();
+    // Files shared to DocuMind from another app opened it.
+    await _importShared(await ShareIntentService.takeInitial());
     if (remindersEnabled) {
       // The app may have been opened by tapping a reminder while closed.
       try {
@@ -232,6 +237,82 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  /// Adds files shared from other apps: documents are copied into the
+  /// library, photos are read with the text scanner into one SCAN document.
+  Future<void> _importShared(List<SharedFile> files) async {
+    if (files.isEmpty || !mounted) return;
+    var added = 0;
+    var skipped = 0;
+    final images = <String>[];
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final storageDir = Directory('${appDir.path}/documents');
+      if (!await storageDir.exists()) await storageDir.create(recursive: true);
+      for (final file in files) {
+        final type = documentTypeFor(file.name);
+        if (type != null) {
+          try {
+            final safe = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+            final stored =
+                '${storageDir.path}/${DateTime.now().microsecondsSinceEpoch}_$safe';
+            final source = File(file.path);
+            await source.copy(stored);
+            final size = await source.length();
+            await source.delete();
+            documents.insert(0,
+                DocItem(file.name, type, formatFileSize(size), 'Just now', 'Ready', path: stored));
+            added++;
+          } catch (_) {
+            skipped++;
+          }
+        } else if (isImageName(file.name)) {
+          images.add(file.path);
+        } else {
+          skipped++;
+        }
+      }
+      if (images.isNotEmpty) {
+        try {
+          final pages = <String>[];
+          for (final path in images) {
+            pages.add(await ScanService.recognize(path));
+            await File(path).delete();
+          }
+          final text = joinScanPages(pages);
+          if (text.length < minScanTextLength) {
+            skipped++;
+          } else {
+            final now = DateTime.now();
+            final stored = '${storageDir.path}/${now.microsecondsSinceEpoch}_scan.txt';
+            await File(stored).writeAsString(text, flush: true);
+            final count = pages.where((p) => p.trim().isNotEmpty).length;
+            documents.insert(
+                0,
+                DocItem(scanName(now), 'SCAN', count == 1 ? '1 page' : '$count pages',
+                    'Just now', 'Ready', path: stored));
+            added++;
+          }
+        } catch (_) {
+          skipped++;
+        }
+      }
+    } catch (_) {
+      skipped += files.length - added;
+    }
+    if (!mounted) return;
+    if (added > 0) {
+      setState(() {
+        analysisAutoRun = false;
+        selected = Pages.library;
+      });
+      await _saveDocuments();
+    }
+    _say(added > 0
+        ? 'Added $added ${added == 1 ? 'document' : 'documents'} from another app'
+            '${skipped > 0 ? ' ($skipped could not be read)' : ''}'
+        : 'DocuMind can read PDF, Word (.docx), text, RTF files and photos of text.');
+  }
+
   void _say(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -333,7 +414,7 @@ class _AppShellState extends State<AppShell> {
       if (!mounted || pages.isEmpty) return;
       final text = joinScanPages(pages);
       if (text.length < minScanTextLength) {
-        say('No readable text found. Use good light, hold the phone steady and fill the frame with the page.');
+        say('No readable text found. Use good light, hold the phone steady and fill the frame with the page. Arabic text cannot be recognized yet.');
         return;
       }
       final now = DateTime.now();

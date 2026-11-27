@@ -52,7 +52,7 @@ class ProfilePage extends StatelessWidget {
         const SettingsRow(
             icon: Icons.language_rounded,
             title: 'Language',
-            subtitle: 'English',
+            subtitle: 'English. Scanning cannot read Arabic yet',
             trailing: 'EN'),
         Card(
             margin: const EdgeInsets.only(bottom: 9),

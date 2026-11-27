@@ -90,7 +90,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
     try {
       final text = await DocumentTextExtractor.extract(doc.path!, doc.type);
       if (text.trim().length < 40) {
-        throw Exception('No readable text was found, even after trying to read the pages as images. Try a clearer scan or a text-based file.');
+        throw Exception('No readable text was found, even after trying to read the pages as images. Try a clearer scan or a text-based file. Arabic text in scans cannot be recognized yet.');
       }
       final analysis = await OpenRouterDocumentAI.analyze(
         fileName: doc.name, fileType: doc.type, text: text);
