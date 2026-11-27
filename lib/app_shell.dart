@@ -614,7 +614,7 @@ class _AppShellState extends State<AppShell> {
             ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset('assets/icon/icon.png',
-                    width: 36, height: 36, fit: BoxFit.cover)),
+                    width: 36, height: 36, cacheWidth: 108, fit: BoxFit.cover)),
             const SizedBox(width: 10),
             // One flexible text, so a small screen or a large text setting
             // shortens the title instead of overflowing the app bar.
@@ -657,8 +657,12 @@ class _AppShellState extends State<AppShell> {
         bottomNavigationBar: Column(mainAxisSize: MainAxisSize.min, children: [
           // Banner ads only on browsing screens, never while reading results
           // or chatting, and never for Pro users.
-          if (selected == Pages.home || selected == Pages.library)
-            const AdBanner(),
+          // Kept alive and only hidden, so moving between tabs does not load
+          // a new ad (and a new native view) every time.
+          Visibility(
+              visible: selected == Pages.home || selected == Pages.library,
+              maintainState: true,
+              child: const AdBanner()),
           if (!wide)
             PremiumNavBar(
               selectedIndex: Pages.tabFor(selected),

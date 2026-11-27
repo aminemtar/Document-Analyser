@@ -69,8 +69,19 @@ class _LibraryPageState extends State<LibraryPage> {
             matchesQuery(d, query) &&
             (filter == 'All' || d.type == filter))
         .toList();
-    return PageBody(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    // A lazy list: only the rows on screen are built, so a library with
+    // hundreds of files scrolls and opens as fast as one with three.
+    return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: CustomScrollView(slivers: [
+              SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  sliver: SliverToBoxAdapter(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
       heading(
           'Document library', '${widget.docs.length} files in your workspace',
           trailing: IconButton(
@@ -112,7 +123,14 @@ class _LibraryPageState extends State<LibraryPage> {
             padding: EdgeInsets.only(bottom: 10),
             child: Text('Tap to analyze · hold to rename · swipe to delete',
                 style: TextStyle(color: muted, fontSize: 13))),
-      ...items.map((d) => Dismissible(
+                  ]))),
+              SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+                  sliver: SliverList.builder(
+                      itemCount: items.length,
+                      itemBuilder: (context, i) {
+                        final d = items[i];
+                        return Dismissible(
             key: ObjectKey(d),
             direction: DismissDirection.endToStart,
             onDismissed: (_) => widget.onDelete(d),
@@ -129,7 +147,8 @@ class _LibraryPageState extends State<LibraryPage> {
                 doc: d,
                 onTap: () => widget.onOpen(d),
                 onLongPress: () => _rename(d)),
-          )),
-    ]));
+          );
+                      })),
+            ])));
   }
 }
