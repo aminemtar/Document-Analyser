@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -15,6 +16,7 @@ import 'theme/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _lockPortraitOnPhones();
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
@@ -120,4 +122,18 @@ class _DocuMindAppState extends State<DocuMindApp>
         ],
         home: const AppShell(),
       );
+}
+
+
+/// Phones stay in portrait; tablets (shortest side >= 600dp) may rotate.
+Future<void> _lockPortraitOnPhones() async {
+  final views = WidgetsBinding.instance.platformDispatcher.views;
+  if (views.isEmpty) return;
+  final view = views.first;
+  final shortest = view.physicalSize.shortestSide / view.devicePixelRatio;
+  if (shortest < 600) {
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+    ]);
+  }
 }
