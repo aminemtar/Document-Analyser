@@ -16,6 +16,7 @@ class _MoreAnalysesPageState extends State<MoreAnalysesPage> {
   void initState() {
     super.initState();
     AdService.rewardedReady.addListener(_refresh);
+    _load();
   }
 
   void _refresh() {
@@ -28,10 +29,39 @@ class _MoreAnalysesPageState extends State<MoreAnalysesPage> {
     super.dispose();
   }
 
+  bool canWatch = true;
+  bool adFree = false;
+
+  Future<void> _load() async {
+    final watch = await UsageService.canWatchRewarded();
+    final free = await UsageService.isAdFree();
+    if (mounted) {
+      setState(() {
+        canWatch = watch;
+        adFree = free;
+      });
+    }
+  }
+
+  /// A rewarded ad is worth far more than a banner view, so one ad buys a
+  /// full day without banners or pop-up ads.
+  Future<void> _watchForAdFree() async {
+    final earned = await AdService.showRewarded();
+    if (!mounted || !earned) return;
+    await UsageService.recordRewarded();
+    await UsageService.grantAdFree();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('You earned 24 hours without banner or pop-up ads.'),
+        behavior: SnackBarBehavior.floating));
+    await _load();
+  }
+
   Future<void> _watchAd() async {
     final earned = await AdService.showRewarded();
     if (!mounted) return;
     if (earned) {
+      await UsageService.recordRewarded();
       await UsageService.addBonus();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -82,21 +112,39 @@ class _MoreAnalysesPageState extends State<MoreAnalysesPage> {
                               height: 1.45)),
                     ])),
             const SizedBox(height: 18),
-            SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                    onPressed: AdService.rewardedReady.value ? _watchAd : null,
-                    style: FilledButton.styleFrom(
-                        backgroundColor: blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16)),
-                    icon: const Icon(Icons.play_circle_outline_rounded),
-                    label: Text(
-                        AdService.rewardedReady.value
-                            ? 'Watch an ad for 1 extra analysis'
-                            : 'No ad available right now. Try again soon.',
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)))),
+            if (!canWatch)
+              Text('You have reached today’s limit of ad rewards. Come back tomorrow.',
+                  style: TextStyle(color: muted, fontSize: 13, height: 1.4))
+            else ...[
+              SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                      onPressed: AdService.rewardedReady.value ? _watchAd : null,
+                      style: FilledButton.styleFrom(
+                          backgroundColor: blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16)),
+                      icon: const Icon(Icons.play_circle_outline_rounded),
+                      label: Text(
+                          AdService.rewardedReady.value
+                              ? 'Watch an ad for 1 extra analysis'
+                              : 'No ad available right now. Try again soon.',
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)))),
+              const SizedBox(height: 10),
+              SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                      onPressed: AdService.rewardedReady.value && !adFree
+                          ? _watchForAdFree
+                          : null,
+                      style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14)),
+                      icon: const Icon(Icons.block_rounded),
+                      label: Text(adFree
+                          ? 'Ads are paused for you right now'
+                          : 'Watch an ad: no banner or pop-up ads for 24 hours'))),
+            ],
             const SizedBox(height: 6),
             Center(
                 child: TextButton(

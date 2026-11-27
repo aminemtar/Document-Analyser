@@ -64,4 +64,70 @@ void main() {
     expect(AdService.supported, isFalse);
     expect(AdService.adsAllowed, isFalse);
   });
+
+  group('smart interstitial rules', () {
+    final now = DateTime(2026, 11, 27, 12);
+    bool show({
+      int total = 10,
+      DateTime? firstRun,
+      int today = 0,
+    }) =>
+        shouldShowInterstitial(
+            analysesSinceLastAd: 2,
+            lastShown: null,
+            now: now,
+            totalAnalyses: total,
+            firstRun: firstRun,
+            shownToday: today);
+
+    test('not before the third analysis', () {
+      expect(show(total: 2), isFalse);
+      expect(show(total: 3), isTrue);
+    });
+
+    test('not during the first day after install', () {
+      expect(show(firstRun: now.subtract(const Duration(hours: 5))), isFalse);
+      expect(show(firstRun: now.subtract(const Duration(hours: 30))), isTrue);
+    });
+
+    test('at most three a day', () {
+      expect(show(today: 2), isTrue);
+      expect(show(today: 3), isFalse);
+    });
+  });
+
+  group('rewarded rewards', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+    final day = DateTime(2026, 11, 27, 9);
+
+    test('an ad-free period starts and ends', () async {
+      expect(await UsageService.isAdFree(now: day), isFalse);
+      await UsageService.grantAdFree(now: day);
+      expect(await UsageService.isAdFree(now: day), isTrue);
+      expect(UsageService.adFreeNotifier.value, isTrue);
+      expect(await UsageService.isAdFree(now: day.add(const Duration(hours: 25))),
+          isFalse);
+    });
+
+    test('rewarded ads are capped per day', () async {
+      for (var i = 0; i < UsageService.maxRewardedPerDay; i++) {
+        expect(await UsageService.canWatchRewarded(now: day), isTrue);
+        await UsageService.recordRewarded(now: day);
+      }
+      expect(await UsageService.canWatchRewarded(now: day), isFalse);
+      expect(
+          await UsageService.canWatchRewarded(
+              now: day.add(const Duration(days: 1))),
+          isTrue);
+    });
+
+    test('a rewarded ad adds questions for that day only', () async {
+      for (var i = 0; i < UsageService.freeDailyQuestions; i++) {
+        await UsageService.recordDaily('ask', now: day);
+      }
+      expect(await UsageService.canUseDaily('ask', now: day), isFalse);
+      await UsageService.addQuestionBonus(UsageService.questionBonusSize, day);
+      expect(await UsageService.canUseDaily('ask', now: day), isTrue);
+    });
+  });
 }

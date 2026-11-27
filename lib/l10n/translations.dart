@@ -225,6 +225,14 @@ const Map<String, String> frTexts = {
   "No ad available right now. Try again soon.": "Aucune publicité disponible pour le moment. Réessayez bientôt.",
   "Watch a short ad to earn one extra analysis, or come back next month for a fresh allowance.": "Regardez une courte publicité pour gagner une analyse de plus, ou revenez le mois prochain pour un nouveau quota.",
   "Get more analyses": "Obtenir plus d’analyses",
+  "Ads are paused for you right now": "Les publicités sont en pause pour vous",
+  "Watch an ad: no banner or pop-up ads for 24 hours": "Regarder une pub : sans bannières ni pubs plein écran pendant 24 h",
+  "You have reached today’s limit of ad rewards. Come back tomorrow.": "Vous avez atteint la limite de récompenses publicitaires du jour. Revenez demain.",
+  "You earned 24 hours without banner or pop-up ads.": "Vous avez gagné 24 heures sans bannières ni pubs plein écran.",
+  "You earned 5 more questions today.": "Vous avez gagné 5 questions de plus aujourd’hui.",
+  "Watch a short ad to get 5 more questions today.": "Regardez une courte publicité pour obtenir 5 questions de plus aujourd’hui.",
+  "Watch ad": "Voir la pub",
+  "Daily questions used": "Questions du jour utilisées",
 };
 
 /// English text -> Arabic.
@@ -451,6 +459,14 @@ const Map<String, String> arTexts = {
   "No ad available right now. Try again soon.": "لا يوجد إعلان متاح الآن. حاول مجددًا قريبًا.",
   "Watch a short ad to earn one extra analysis, or come back next month for a fresh allowance.": "شاهد إعلانًا قصيرًا لتربح تحليلًا إضافيًا، أو عد الشهر القادم لحصة جديدة.",
   "Get more analyses": "احصل على المزيد من التحليلات",
+  "Ads are paused for you right now": "الإعلانات متوقفة لك الآن",
+  "Watch an ad: no banner or pop-up ads for 24 hours": "شاهد إعلانًا: بدون بانر أو إعلانات منبثقة لمدة 24 ساعة",
+  "You have reached today’s limit of ad rewards. Come back tomorrow.": "بلغت الحد اليومي لمكافآت الإعلانات. عد غدًا.",
+  "You earned 24 hours without banner or pop-up ads.": "ربحت 24 ساعة بدون إعلانات البانر أو الإعلانات المنبثقة.",
+  "You earned 5 more questions today.": "ربحت 5 أسئلة إضافية اليوم.",
+  "Watch a short ad to get 5 more questions today.": "شاهد إعلانًا قصيرًا لتحصل على 5 أسئلة إضافية اليوم.",
+  "Watch ad": "شاهد الإعلان",
+  "Daily questions used": "استُخدمت أسئلة اليوم",
 };
 
 /// Texts with numbers or names inside: (pattern, French, Arabic).

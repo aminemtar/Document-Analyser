@@ -7,6 +7,7 @@ import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ad_offers.dart';
 import '../widgets/common.dart';
 
 class AssistantPage extends StatefulWidget {
@@ -100,8 +101,12 @@ class _AssistantPageState extends State<AssistantPage> {
       return;
     }
     if (!await UsageService.canUseDaily('ask')) {
-      setState(() => error = UsageService.dailyLimitMessage);
-      return;
+      if (!mounted) return;
+      // Out of daily questions: offer more for a short ad before refusing.
+      if (!await offerQuestionBonus(context)) {
+        if (mounted) setState(() => error = UsageService.dailyLimitMessage);
+        return;
+      }
     }
     await UsageService.recordDaily('ask');
     if (!mounted) return;

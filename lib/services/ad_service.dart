@@ -3,16 +3,32 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
+import 'usage_service.dart';
 
-/// Whether an interstitial should be shown now. Pure, so it can be tested:
-/// at most one every [minGap], and only after [every] completed analyses.
+/// Whether an interstitial should be shown now. Pure, so it can be tested.
+///
+/// Gentle on purpose, because annoyed users leave and bad reviews cost more
+/// than the ads earn:
+/// - never before the user has completed [minTotalAnalyses] analyses, and not
+///   during their first [grace] after installing,
+/// - only after [every] completed analyses, at least [minGap] apart,
+/// - at most [maxPerDay] a day.
 bool shouldShowInterstitial({
   required int analysesSinceLastAd,
   required DateTime? lastShown,
   required DateTime now,
   int every = 2,
-  Duration minGap = const Duration(minutes: 3),
+  Duration minGap = const Duration(minutes: 4),
+  int totalAnalyses = 1 << 20,
+  int minTotalAnalyses = 3,
+  DateTime? firstRun,
+  Duration grace = const Duration(hours: 24),
+  int shownToday = 0,
+  int maxPerDay = 3,
 }) {
+  if (totalAnalyses < minTotalAnalyses) return false;
+  if (firstRun != null && now.difference(firstRun) < grace) return false;
+  if (shownToday >= maxPerDay) return false;
   if (analysesSinceLastAd < every) return false;
   if (lastShown != null && now.difference(lastShown) < minGap) return false;
   return true;
@@ -20,14 +36,24 @@ bool shouldShowInterstitial({
 
 /// AdMob: consent form, banner, interstitial and rewarded ads.
 ///
-/// Everything here is a no-op on unsupported platforms, in tests, 
-/// users, and when ads fail to load, so the app never depends on an ad.
+/// Everything here is a no-op on unsupported platforms, in tests, while the
+/// user is ad-free, and when ads fail to load, so the app never depends on an ad.
 abstract final class AdService {
   /// True once the Mobile Ads SDK is initialized and ads may be requested.
   static final ValueNotifier<bool> ready = ValueNotifier(false);
 
   /// True while a rewarded ad is loaded and can be shown.
   static final ValueNotifier<bool> rewardedReady = ValueNotifier(false);
+
+  static int _interstitialFailures = 0;
+  static int _rewardedFailures = 0;
+
+  /// Tries again after a failed load, waiting longer each time (30 s, 60 s,
+  /// 2 min, ...) up to 5 attempts, so a bad connection does not hammer AdMob.
+  static void _retry(int attempt, void Function() load) {
+    if (attempt > 5) return;
+    Timer(Duration(seconds: 30 * (1 << (attempt - 1))), load);
+  }
 
   static InterstitialAd? _interstitial;
   static RewardedAd? _rewarded;
@@ -44,6 +70,8 @@ abstract final class AdService {
 
   static Future<void> init() async {
     if (!supported) return;
+    await UsageService.isAdFree();
+    await UsageService.firstRun();
     try {
       await _gatherConsent();
       if (!await ConsentInformation.instance.canRequestAds()) return;
@@ -97,8 +125,14 @@ abstract final class AdService {
       adUnitId: AdConfig.interstitial,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _interstitial = ad,
-        onAdFailedToLoad: (_) => _interstitial = null,
+        onAdLoaded: (ad) {
+          _interstitial = ad;
+          _interstitialFailures = 0;
+        },
+        onAdFailedToLoad: (_) {
+          _interstitial = null;
+          _retry(++_interstitialFailures, _loadInterstitial);
+        },
       ),
     );
   }
@@ -111,26 +145,32 @@ abstract final class AdService {
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           _rewarded = ad;
+          _rewardedFailures = 0;
           rewardedReady.value = true;
         },
         onAdFailedToLoad: (_) {
           _rewarded = null;
           rewardedReady.value = false;
+          _retry(++_rewardedFailures, _loadRewarded);
         },
       ),
     );
   }
 
   /// Call after each successful analysis. Shows a full-screen ad at a natural
-  /// break, not too often, and for example after a finished analysis.
-  static void onAnalysisCompleted() {
+  /// break (the result is ready, the user has not started anything else),
+  /// following the gentle rules of [shouldShowInterstitial].
+  static Future<void> onAnalysisCompleted() async {
     if (!adsAllowed || !ready.value) return;
     _analysesSinceAd++;
     final now = DateTime.now();
     if (!shouldShowInterstitial(
         analysesSinceLastAd: _analysesSinceAd,
         lastShown: _lastInterstitial,
-        now: now)) {
+        now: now,
+        totalAnalyses: await UsageService.totalAnalyses(),
+        firstRun: await UsageService.firstRun(now: now),
+        shownToday: await UsageService.interstitialsToday(now: now))) {
       return;
     }
     final ad = _interstitial;
@@ -151,6 +191,7 @@ abstract final class AdService {
     );
     _analysesSinceAd = 0;
     _lastInterstitial = now;
+    await UsageService.recordInterstitial(now: now);
     ad.show();
   }
 

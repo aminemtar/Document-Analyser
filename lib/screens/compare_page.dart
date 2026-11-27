@@ -5,6 +5,7 @@ import '../services/document_text_extractor.dart';
 import '../services/openrouter_document_ai.dart';
 import '../services/usage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ad_offers.dart';
 import '../widgets/common.dart';
 
 class ComparePage extends StatefulWidget {
@@ -29,8 +30,11 @@ class _ComparePageState extends State<ComparePage> {
       return;
     }
     if (!await UsageService.canUseDaily('ask')) {
-      if (mounted) setState(() => error = UsageService.dailyLimitMessage);
-      return;
+      if (!mounted) return;
+      if (!await offerQuestionBonus(context)) {
+        if (mounted) setState(() => error = UsageService.dailyLimitMessage);
+        return;
+      }
     }
     await UsageService.recordDaily('ask');
     if (!mounted) return;
