@@ -33,9 +33,23 @@ abstract final class L10n {
   /// Translates [text] (written in English) into the current language.
   /// Returns it unchanged when English is shown or no translation exists, so
   /// document names, AI answers and anything else pass through untouched.
+  static final Map<String, Map<String, String>> _cache = {'fr': {}, 'ar': {}};
+
   static String translate(String text, {String? to}) {
     final lang = to ?? language.value;
     if (lang == 'en' || text.isEmpty) return text;
+    // Texts are drawn again and again (every rebuild, every scroll frame), so
+    // the result of the pattern search is remembered. Document names and AI
+    // answers are one-off, so the cache is emptied if it grows large.
+    final cache = _cache[lang]!;
+    final hit = cache[text];
+    if (hit != null) return hit;
+    final result = _translate(text, lang);
+    if (cache.length > 2000) cache.clear();
+    return cache[text] = result;
+  }
+
+  static String _translate(String text, String lang) {
     final table = lang == 'fr' ? frTexts : arTexts;
     final direct = table[text];
     if (direct != null) return direct;

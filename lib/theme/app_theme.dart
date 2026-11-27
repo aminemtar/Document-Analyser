@@ -73,7 +73,20 @@ abstract final class AppRadius {
 
 abstract final class AppTheme {
   /// The theme for the current [AppPalette.dark] value.
+  static ThemeData? _cached;
+  static String? _cachedKey;
+
+  /// Building a theme is not free, and it is asked for on every rebuild of the
+  /// app root, so the last one is kept for as long as dark mode and language
+  /// stay the same.
   static ThemeData build() {
+    final key = '${AppPalette.dark}-${L10n.language.value}';
+    if (_cached != null && _cachedKey == key) return _cached!;
+    _cachedKey = key;
+    return _cached = _build();
+  }
+
+  static ThemeData _build() {
     final brightness = AppPalette.dark ? Brightness.dark : Brightness.light;
     final base = ThemeData(brightness: brightness, useMaterial3: true);
     final scheme = ColorScheme.fromSeed(
@@ -87,10 +100,11 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: pale,
-      // Cairo draws Arabic well; Inter is used for English and French.
+      // Cairo draws Arabic well. Inter is bundled with the app, so English and
+      // French text never waits for a download or jumps when a font arrives.
       textTheme: (L10n.language.value == 'ar'
               ? GoogleFonts.cairoTextTheme(base.textTheme)
-              : GoogleFonts.interTextTheme(base.textTheme))
+              : base.textTheme.apply(fontFamily: 'Inter'))
           .apply(bodyColor: navy, displayColor: navy),
       appBarTheme: AppBarTheme(
         backgroundColor: pale,

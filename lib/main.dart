@@ -238,7 +238,7 @@ class _RevealPainter extends CustomPainter {
         image,
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
         bounds,
-        Paint()..filterQuality = FilterQuality.medium);
+        Paint()..filterQuality = FilterQuality.low);
     canvas.restore();
     // A thin light edge on the moving circle.
     final radius = maxRadius * (toDark ? progress : 1 - progress);
