@@ -67,9 +67,11 @@ class _DocuMindAppState extends State<DocuMindApp>
           _appKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null || !boundary.hasSize) return;
       _snapshot?.dispose();
-      _snapshot = boundary.toImageSync(
-          pixelRatio: WidgetsBinding
-              .instance.platformDispatcher.views.first.devicePixelRatio);
+      // Capped at 2.5x: the old frame only has to look right for a moment
+      // while it moves, and a smaller picture is cheaper to draw each frame.
+      final dpr = WidgetsBinding
+          .instance.platformDispatcher.views.first.devicePixelRatio;
+      _snapshot = boundary.toImageSync(pixelRatio: dpr > 2.5 ? 2.5 : dpr);
     } catch (_) {
       _snapshot = null; // No smooth fade available: the theme just switches.
     }
@@ -126,7 +128,9 @@ class _DocuMindAppState extends State<DocuMindApp>
   void _onThemeChanged() {
     final dark = _resolveDark();
     if (dark == _dark) return;
-    _captureOldFrame();
+    final reduceMotion = WidgetsBinding
+        .instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+    if (!reduceMotion) _captureOldFrame();
     _toDark = dark;
     _origin = ThemeController.toggleCenter;
     _dark = dark;
@@ -154,6 +158,10 @@ class _DocuMindAppState extends State<DocuMindApp>
         title: 'DocuMind AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.build(),
+        // The app draws its own circular reveal, so Flutter's 200 ms theme
+        // fade is switched off. Left on, it re-lerps the whole theme and
+        // rebuilds every themed widget on every frame of that fade.
+        themeAnimationDuration: Duration.zero,
         locale: Locale(L10n.language.value),
         supportedLocales: [for (final c in supportedLanguageCodes) Locale(c)],
         localizationsDelegates: const [

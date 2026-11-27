@@ -39,8 +39,8 @@ class PremiumNavBar extends StatelessWidget {
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: AppPalette.dark ? .45 : .10),
-                blurRadius: 24,
-                offset: const Offset(0, 8)),
+                blurRadius: 16,
+                offset: const Offset(0, 5)),
           ],
         ),
         child: Row(children: [
@@ -110,7 +110,9 @@ class _Tab extends StatelessWidget {
                 duration: duration,
                 style: TextStyle(
                     fontSize: 11,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    // One weight for every state: animating the weight
+                    // would re-measure the text on each frame.
+                    fontWeight: FontWeight.w700,
                     color: selected ? blue : muted),
                 child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
