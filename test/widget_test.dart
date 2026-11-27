@@ -229,4 +229,19 @@ void main() {
     expect(find.text('Appearance'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('tablet library shows the file list next to the analysis',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Library'));
+    await tester.pumpAndSettle();
+    expect(find.text('Document library'), findsOneWidget);
+    expect(find.text('Document analysis'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

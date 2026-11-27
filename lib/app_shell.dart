@@ -496,6 +496,19 @@ class _AppShellState extends State<AppShell> {
         selected = page;
       });
 
+  /// Library and analysis sit side by side on wide screens: the file list on
+  /// one side, the open document's results on the other.
+  Widget _wideContent(Map<int, Widget> pages) {
+    if (selected != Pages.library && selected != Pages.analyze) {
+      return pages[selected]!;
+    }
+    return Row(children: [
+      SizedBox(width: 400, child: pages[Pages.library]!),
+      VerticalDivider(width: 1, color: AppColors.border),
+      Expanded(child: pages[Pages.analyze]!),
+    ]);
+  }
+
   Widget _sideRail() => NavigationRail(
         selectedIndex: Pages.tabFor(selected),
         onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
@@ -588,7 +601,7 @@ class _AppShellState extends State<AppShell> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          leading: isSubPage
+          leading: isSubPage && !wide
               ? IconButton(
                   tooltip: 'Back'.tr,
                   onPressed: () =>
@@ -625,7 +638,7 @@ class _AppShellState extends State<AppShell> {
                     ? Row(children: [
                         _sideRail(),
                         VerticalDivider(width: 1, color: AppColors.border),
-                        Expanded(child: pages[selected]!),
+                        Expanded(child: _wideContent(pages)),
                       ])
                     : pages[selected]!),
         floatingActionButton: selected == Pages.analyze ||
