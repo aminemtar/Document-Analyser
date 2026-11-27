@@ -496,6 +496,32 @@ class _AppShellState extends State<AppShell> {
         selected = page;
       });
 
+  Widget _sideRail() => NavigationRail(
+        selectedIndex: Pages.tabFor(selected),
+        onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
+        labelType: NavigationRailLabelType.all,
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.surfaceTint,
+        destinations: [
+          NavigationRailDestination(
+              icon: const Icon(Icons.grid_view_outlined),
+              selectedIcon: const Icon(Icons.grid_view_rounded),
+              label: Text('Home'.tr)),
+          NavigationRailDestination(
+              icon: const Icon(Icons.folder_copy_outlined),
+              selectedIcon: const Icon(Icons.folder_copy_rounded),
+              label: Text('Library'.tr)),
+          NavigationRailDestination(
+              icon: const Icon(Icons.auto_awesome_outlined),
+              selectedIcon: const Icon(Icons.auto_awesome_rounded),
+              label: Text('Assistant'.tr)),
+          NavigationRailDestination(
+              icon: const Icon(Icons.person_outline_rounded),
+              selectedIcon: const Icon(Icons.person_rounded),
+              label: Text('Profile'.tr)),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -549,6 +575,8 @@ class _AppShellState extends State<AppShell> {
           onRestore: _restore),
     };
     final isSubPage = Pages.isSubPage(selected);
+    // Tablets and landscape desktops get a side rail instead of a bottom bar.
+    final wide = MediaQuery.sizeOf(context).width >= 840;
     return PopScope(
       // Back from a sub-page or another tab returns Home instead of closing.
       canPop: selected == Pages.home,
@@ -592,7 +620,14 @@ class _AppShellState extends State<AppShell> {
         ),
         body: loading
             ? const Center(child: CircularProgressIndicator())
-            : SafeArea(child: pages[selected]!),
+            : SafeArea(
+                child: wide
+                    ? Row(children: [
+                        _sideRail(),
+                        VerticalDivider(width: 1, color: AppColors.border),
+                        Expanded(child: pages[selected]!),
+                      ])
+                    : pages[selected]!),
         floatingActionButton: selected == Pages.analyze ||
                 selected == Pages.assistant ||
                 selected == Pages.profile
@@ -610,6 +645,7 @@ class _AppShellState extends State<AppShell> {
           // or chatting, and never for Pro users.
           if (selected == Pages.home || selected == Pages.library)
             const AdBanner(),
+          if (!wide)
           NavigationBar(
           selectedIndex: Pages.tabFor(selected),
           onDestinationSelected: (i) => _goTo(Pages.tabs[i]),

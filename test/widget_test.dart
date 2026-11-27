@@ -213,4 +213,20 @@ void main() {
     expect(find.text('Understand any document'), findsNothing);
     expect(find.text('Add document'), findsOneWidget);
   });
+
+  testWidgets('tablet width uses a side rail instead of the bottom bar',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'onboarded': true});
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const DocuMindApp());
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
