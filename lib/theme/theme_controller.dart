@@ -4,6 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// The user's appearance choice: follow the system, or force light or dark.
 /// Kept on the device.
 abstract final class ThemeController {
+  /// Where the light/dark switch was tapped, in screen coordinates. The theme
+  /// change spreads from (or shrinks back to) this point. Null for changes
+  /// that do not come from a tap, such as the phone's own dark mode.
+  static Offset? revealOrigin;
+
   static const _key = 'theme_mode';
 
   static final ValueNotifier<ThemeMode> mode =

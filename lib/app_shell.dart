@@ -22,6 +22,7 @@ import 'screens/library_page.dart';
 import 'screens/onboarding_page.dart';
 import 'screens/profile_page.dart';
 import 'theme/app_theme.dart';
+import 'widgets/premium_nav_bar.dart';
 import 'widgets/ad_banner.dart';
 import 'widgets/quick_settings.dart';
 import 'widgets/scan_flow.dart';
@@ -659,31 +660,19 @@ class _AppShellState extends State<AppShell> {
           if (selected == Pages.home || selected == Pages.library)
             const AdBanner(),
           if (!wide)
-          NavigationBar(
-          selectedIndex: Pages.tabFor(selected),
-          onDestinationSelected: (i) => _goTo(Pages.tabs[i]),
-          height: 70,
-          backgroundColor: AppColors.surface,
-          indicatorColor: AppColors.surfaceTint,
-          destinations: [
-            NavigationDestination(
-                icon: Icon(Icons.grid_view_outlined),
-                selectedIcon: Icon(Icons.grid_view_rounded),
-                label: 'Home'.tr),
-            NavigationDestination(
-                icon: Icon(Icons.folder_copy_outlined),
-                selectedIcon: Icon(Icons.folder_copy_rounded),
-                label: 'Library'.tr),
-            NavigationDestination(
-                icon: Icon(Icons.auto_awesome_outlined),
-                selectedIcon: Icon(Icons.auto_awesome_rounded),
-                label: 'Assistant'.tr),
-            NavigationDestination(
-                icon: Icon(Icons.person_outline_rounded),
-                selectedIcon: Icon(Icons.person_rounded),
-                label: 'Profile'.tr),
-          ],
-        ),
+            PremiumNavBar(
+              selectedIndex: Pages.tabFor(selected),
+              onSelected: (i) => _goTo(Pages.tabs[i]),
+              items: const [
+                NavItem(Icons.grid_view_outlined, Icons.grid_view_rounded, 'Home'),
+                NavItem(Icons.folder_copy_outlined, Icons.folder_copy_rounded,
+                    'Library'),
+                NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome_rounded,
+                    'Assistant'),
+                NavItem(Icons.person_outline_rounded, Icons.person_rounded,
+                    'Profile'),
+              ],
+            ),
         ]),
       ),
     );
