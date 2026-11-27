@@ -639,9 +639,12 @@ class _AppShellState extends State<AppShell> {
                     ? Row(children: [
                         _sideRail(),
                         VerticalDivider(width: 1, color: AppColors.border),
-                        Expanded(child: _wideContent(pages)),
+                        Expanded(child: RepaintBoundary(child: _wideContent(pages))),
                       ])
-                    : pages[selected]!),
+                    // Its own paint layer: animations elsewhere (the bottom
+                    // bar, the FAB) do not repaint the page, and the page
+                    // scrolling does not repaint them.
+                    : RepaintBoundary(child: pages[selected]!)),
         floatingActionButton: selected == Pages.analyze ||
                 selected == Pages.assistant ||
                 selected == Pages.profile
@@ -664,7 +667,8 @@ class _AppShellState extends State<AppShell> {
               maintainState: true,
               child: const AdBanner()),
           if (!wide)
-            PremiumNavBar(
+            RepaintBoundary(
+              child: PremiumNavBar(
               selectedIndex: Pages.tabFor(selected),
               onSelected: (i) => _goTo(Pages.tabs[i]),
               items: const [
@@ -676,7 +680,7 @@ class _AppShellState extends State<AppShell> {
                 NavItem(Icons.person_outline_rounded, Icons.person_rounded,
                     'Profile'),
               ],
-            ),
+            )),
         ]),
       ),
     );

@@ -8,17 +8,25 @@ import '../widgets/rename_dialog.dart';
 
 /// Whether a document matches the search text: its name, or anything in its
 /// saved analysis (summary, details, risks, dates, amounts).
+/// Lower-cased searchable text of an analysis, built once per document.
+final Expando<String> _searchText = Expando('searchText');
+
 bool matchesQuery(DocItem doc, String query) {
   final q = query.trim().toLowerCase();
   if (q.isEmpty) return true;
   if (doc.name.toLowerCase().contains(q)) return true;
   final json = doc.analysisJson;
   if (json == null) return false;
-  try {
-    return _textValues(jsonDecode(json)).any((t) => t.toLowerCase().contains(q));
-  } catch (_) {
-    return false;
+  var text = _searchText[doc];
+  if (text == null) {
+    try {
+      text = _textValues(jsonDecode(json)).join('\n').toLowerCase();
+    } catch (_) {
+      text = '';
+    }
+    _searchText[doc] = text;
   }
+  return text.contains(q);
 }
 
 /// Every text value inside decoded JSON (not the key names).
