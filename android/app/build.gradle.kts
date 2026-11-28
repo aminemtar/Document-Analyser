@@ -56,9 +56,7 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
+        // is added automatically by Flutter. (https://flutter.dev/to/review-gradle-config).
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
@@ -76,6 +74,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
