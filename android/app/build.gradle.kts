@@ -1,3 +1,25 @@
+import java.util.Properties
+
+// Read the root .env file without exposing it to Git.
+val admobEnvFile = rootProject.file("../.env")
+val admobEnv = Properties().apply {
+    if (admobEnvFile.exists()) {
+        admobEnvFile.readLines().forEach { line ->
+            val entry = line.substringBefore("#").trim()
+            val separator = entry.indexOf("=")
+            if (separator > 0) {
+                setProperty(
+                    entry.substring(0, separator).trim(),
+                    entry.substring(separator + 1).trim()
+                )
+            }
+        }
+    }
+}
+val admobApplicationId = admobEnv.getProperty("ADMOB_ANDROID_APP_ID")
+    ?.takeIf { it.isNotBlank() }
+    ?: "ca-app-pub-3940256099942544~3347511713"
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -18,6 +40,7 @@ android {
 
     defaultConfig {
         applicationId = "com.aminemtar.documind"
+        manifestPlaceholders["admobAppId"] = admobApplicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // AdMob needs Android 6.0 (API 23) or newer.
