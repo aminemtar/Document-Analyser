@@ -19,3 +19,8 @@ ios/.symlinks/
 .env
 .env.*
 !.env.example
+
+# Android release signing secrets
+android/key.properties
+*.jks
+*.keystore
