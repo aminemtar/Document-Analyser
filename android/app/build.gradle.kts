@@ -1,5 +1,11 @@
 import java.util.Properties
 
+plugins {
+    id("com.android.application")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
 // Read the root .env file without exposing it to Git.
 val admobEnvFile = rootProject.file("../.env")
 val admobEnv = Properties().apply {
@@ -20,11 +26,6 @@ val admobApplicationId = admobEnv.getProperty("ADMOB_ANDROID_APP_ID")
     ?.takeIf { it.isNotBlank() }
     ?: "ca-app-pub-3940256099942544~3347511713"
 
-plugins {
-    id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
-}
 
 android {
     namespace = "com.example.documind_ai"
