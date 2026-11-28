@@ -39,9 +39,9 @@ DESIGNED TO BE EASY
 YOUR FILES, YOUR CONTROL
 Your documents are stored on your phone. The text of a document is sent to an AI service only when you analyze it or ask a question about it. Scanning runs on your device.
 
-FREE AND PRO
-• Free: a few analyses every month, with ads.
-• Pro (subscription): unlimited analyses, no ads. Monthly or yearly, renews automatically until cancelled. Manage or cancel any time in your Google Play account settings.
+FREE, SUPPORTED BY ADS
+• Free to use, with a few analyses every month and a few assistant questions every day.
+• Need more? Watch a short ad to earn an extra analysis, extra questions, or 24 hours without banner and pop-up ads.
 
 IMPORTANT
 AI can make mistakes or miss context. DocuMind is a reading aid, not legal, financial or medical advice. Always check important facts in the original document.
@@ -62,9 +62,7 @@ Understand any document in seconds: clear summaries, key details, risks and dead
 document,summary,pdf,contract,scan,ocr,deadline,reminder,analyzer,assistant,invoice,review,ai
 
 **Description**
-Same text as the Google Play full description above. Add this paragraph at the end (Apple requires it for subscriptions):
-
-Subscription details: DocuMind Pro is an auto-renewing subscription (monthly or yearly). Payment is charged to your Apple ID at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. You can manage or cancel it in your Apple ID account settings. Privacy policy: [PRIVACY POLICY URL]. Terms of use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Same text as the Google Play full description above. (No subscription paragraph needed in the ads-only edition.)
 
 **What's new (first release)**
 First release of DocuMind AI.
@@ -104,9 +102,9 @@ PENSÉ POUR ÊTRE SIMPLE
 VOS FICHIERS, VOTRE CONTRÔLE
 Vos documents sont stockés sur votre téléphone. Le texte d’un document n’est envoyé à un service d’IA que lorsque vous l’analysez ou posez une question. Le scan s’effectue sur votre appareil.
 
-GRATUIT ET PRO
-• Gratuit : quelques analyses par mois, avec publicités.
-• Pro (abonnement) : analyses illimitées, sans publicité. Mensuel ou annuel, renouvelé automatiquement jusqu’à résiliation. Gérez ou résiliez à tout moment dans les réglages de votre compte Google Play.
+GRATUIT, FINANCÉ PAR LA PUBLICITÉ
+• Gratuit, avec quelques analyses par mois et quelques questions à l’assistant par jour.
+• Besoin de plus ? Regardez une courte publicité pour gagner une analyse, des questions en plus, ou 24 heures sans bannières ni publicités plein écran.
 
 IMPORTANT
 L’IA peut se tromper ou manquer de contexte. DocuMind est une aide à la lecture, pas un conseil juridique, financier ou médical. Vérifiez toujours les informations importantes dans le document d’origine.
@@ -127,9 +125,7 @@ Comprenez vos documents en quelques secondes : résumés clairs, détails clés,
 document,résumé,pdf,contrat,scan,ocr,échéance,rappel,analyse,assistant,facture,lecture,ia
 
 **Description**
-Même texte que la description complète Google Play ci-dessus, puis ce paragraphe :
-
-Détails de l’abonnement : DocuMind Pro est un abonnement à renouvellement automatique (mensuel ou annuel). Le paiement est débité de votre identifiant Apple à la confirmation de l’achat. L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. Vous pouvez le gérer ou le résilier dans les réglages de votre compte Apple. Politique de confidentialité : [URL POLITIQUE DE CONFIDENTIALITÉ]. Conditions d’utilisation : https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Même texte que la description complète Google Play ci-dessus.
 
 **Nouveautés (première version)**
 Première version de DocuMind IA.
@@ -169,9 +165,9 @@ DocuMind: محلل المستندات
 ملفاتك تحت سيطرتك
 تُخزَّن مستنداتك على هاتفك. لا يُرسل نص المستند إلى خدمة الذكاء الاصطناعي إلا عندما تحلله أو تسأل عنه. يتم المسح الضوئي على جهازك.
 
-مجاني وPro
-• مجاني: بضعة تحليلات كل شهر مع إعلانات.
-• Pro (اشتراك): تحليلات غير محدودة وبدون إعلانات. شهري أو سنوي، يتجدد تلقائيًا حتى الإلغاء. أدِر اشتراكك أو ألغِه في أي وقت من إعدادات حسابك في Google Play.
+مجاني بدعم من الإعلانات
+• مجاني الاستخدام، مع بضعة تحليلات كل شهر وبضعة أسئلة للمساعد كل يوم.
+• تحتاج المزيد؟ شاهد إعلانًا قصيرًا لتربح تحليلًا إضافيًا أو أسئلة إضافية أو 24 ساعة بدون إعلانات البانر والإعلانات المنبثقة.
 
 مهم
 قد يخطئ الذكاء الاصطناعي أو يغفل السياق. DocuMind أداة مساعدة للقراءة وليس استشارة قانونية أو مالية أو طبية. تحقق دائمًا من المعلومات المهمة في المستند الأصلي.
@@ -192,27 +188,15 @@ DocuMind AI
 مستند,ملخص,pdf,عقد,مسح,تذكير,موعد,تحليل,مساعد,فاتورة,قراءة,ذكاء
 
 **الوصف**
-نفس نص الوصف الكامل في Google Play أعلاه، ثم هذه الفقرة:
-
-تفاصيل الاشتراك: DocuMind Pro اشتراك يتجدد تلقائيًا (شهري أو سنوي). يُخصم المبلغ من حساب Apple ID عند تأكيد الشراء. يتجدد الاشتراك تلقائيًا ما لم يتم إلغاؤه قبل 24 ساعة على الأقل من نهاية الفترة الحالية. يمكنك إدارته أو إلغاؤه من إعدادات حساب Apple. سياسة الخصوصية: [رابط سياسة الخصوصية]. شروط الاستخدام: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+نفس نص الوصف الكامل في Google Play أعلاه.
 
 **الجديد (الإصدار الأول)**
 الإصدار الأول من DocuMind AI.
 
 ---
 
-## Subscriptions (create in both stores)
-
-| | Monthly | Yearly |
-|---|---|---|
-| Product id (must match the app) | `documind_pro_monthly` | `documind_pro_yearly` |
-| Display name (30 max) | DocuMind Pro Monthly | DocuMind Pro Yearly |
-| Description (45 max) | Unlimited analyses, no ads | Unlimited analyses, no ads. Best value |
-| Suggested price | [set in the console, e.g. 4.99 USD] | [set in the console, e.g. 39.99 USD] |
-| Billing period | 1 month | 1 year |
-
-French: "DocuMind Pro Mensuel" / "DocuMind Pro Annuel", "Analyses illimitées, sans pub".
-Arabic: "DocuMind Pro شهري" / "DocuMind Pro سنوي", "تحليلات غير محدودة بدون إعلانات".
+## Subscriptions
+None in the ads-only edition.
 
 ## Screenshot headlines
 In `store/screenshots-tool/captions.json`, in the order to take the screenshots (see README).

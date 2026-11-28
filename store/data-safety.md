@@ -16,13 +16,12 @@ Data types:
 | Type | Collected | Shared | Purpose | Optional |
 |---|---|---|---|---|
 | Files and docs (document text sent to the AI service) | Yes | Yes (AI provider acting as service provider) | App functionality | No (needed for analysis) |
-| Device or other IDs (advertising ID) | Yes | Yes (Google AdMob) | Advertising | Yes for Pro users |
-| App interactions / diagnostics from ads SDK | Yes | Yes (AdMob) | Advertising, analytics | Yes for Pro users |
-| Approximate location (derived from IP by AdMob) | Yes | Yes (AdMob) | Advertising | Yes for Pro users |
-| Purchase history | Handled by Google Play | No | App functionality | n/a |
+| Device or other IDs (advertising ID) | Yes | Yes (Google AdMob) | Advertising | Yes, ad-free for 24 h after a rewarded ad |
+| App interactions / diagnostics from ads SDK | Yes | Yes (AdMob) | Advertising, analytics | Yes, ad-free for 24 h after a rewarded ad |
+| Approximate location (derived from IP by AdMob) | Yes | Yes (AdMob) | Advertising | Yes, ad-free for 24 h after a rewarded ad |
 
 Not collected: name, email, phone, photos/videos stored by us, contacts, precise location, health, financial info.
-Also declare: Advertising ID usage (the app has the AD_ID permission), and in "App content" tick "Contains ads".
+This edition has no in-app purchases (answer "No" to purchases). Also declare: Advertising ID usage (the app has the AD_ID permission), and in "App content" tick "Contains ads".
 
 ## Apple, App Privacy ("nutrition labels")
 
@@ -31,13 +30,12 @@ Also declare: Advertising ID usage (the app has the AD_ID permission), and in "A
 | Other user content (document text sent for analysis) | No | No | App functionality |
 | Identifiers: Device ID (advertising) | No | Yes, only if ATT is granted | Third-party advertising |
 | Usage data: product interaction, advertising data | No | Yes, only if ATT is granted | Third-party advertising |
-| Purchases | No | No | App functionality |
 
 iOS reminders before submission:
 - Add `NSUserTrackingUsageDescription` to Info.plist and show the ATT prompt, or ship iOS with non-personalized ads only and answer "no tracking".
 - Add `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription` strings (scan).
 - Add a Privacy Manifest if your SDK versions require it.
-- Provide the privacy policy URL and a working "Restore purchases" button (already in the app).
+- Provide the privacy policy URL.
 
 ## Age and content rating
 - Google Play (IARC questionnaire): utility app, no violence/sexual content/gambling, contains ads. Expected rating: Everyone.

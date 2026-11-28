@@ -40,7 +40,7 @@ python3 store/build_graphics.py
 
 ## Checklist before publishing
 - [ ] Real AdMob app and ad unit IDs in `lib/config/ad_config.dart`, AndroidManifest and Info.plist; build with `--dart-define=ADS_LIVE=true`
-- [ ] Subscriptions created with ids `documind_pro_monthly` and `documind_pro_yearly` in Play Console and App Store Connect
+- [ ] Ads-only edition: no subscriptions to create (see ADS-ONLY.md)
 - [ ] Release signing key created and backed up (never commit it); Play App Signing on
 - [ ] Application id changed from `com.example.documind_ai` to your own
 - [ ] Privacy policy hosted, URL added in both stores and inside the app (Profile)
