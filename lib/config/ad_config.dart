@@ -1,11 +1,13 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// AdMob IDs are loaded from the local, git-ignored .env file.
-/// If an ID is absent, Google's official test unit is used instead.
+/// Debug/profile builds always use Google's official test ad units.
+/// Only release builds use the production ad-unit IDs from the local .env.
 abstract final class AdConfig {
   static String _id(String key, String fallback) {
+    if (!kReleaseMode) return fallback;
     final value = dotenv.env[key]?.trim();
     return value == null || value.isEmpty ? fallback : value;
   }
